@@ -1,21 +1,21 @@
+using GameApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace GameApi.Data
 {
-    public class PdfDbContextFactory : IDesignTimeDbContextFactory<PdfDbContext>
+    public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
     {
-        public PdfDbContext CreateDbContext(string[] args)
+        public AppDbContext CreateDbContext(string[] args)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<PdfDbContext>();
-            
-            // Itt add meg a MariaDB connection string-et
+            var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+
             optionsBuilder.UseMySql(
-                "server=127.0.0.1;port=3306;database=pdfdb;user=gameuser;password=secretpassword;",
+                "server=127.0.0.1;port=3306;database=dnddb;user=gameuser;password=secretpassword;",
                 new MySqlServerVersion(new Version(8, 0, 36))
             );
 
-            return new PdfDbContext(optionsBuilder.Options);
+            return new AppDbContext(optionsBuilder.Options);
         }
     }
 }

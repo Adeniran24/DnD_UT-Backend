@@ -1,25 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
-using GameApi.Data;      // <- kell, hogy a PdfDbContext-et lássa
-using GameApi.Models;    // <- kell, hogy a PdfFile típust lássa
-using Microsoft.AspNetCore.Mvc;
-
+using GameApi.Data;
+using GameApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
 public class PdfController : ControllerBase
 {
     private readonly IWebHostEnvironment _env;
-    private readonly PdfDbContext _context;
+    private readonly AppDbContext _context;
 
-    public PdfController(IWebHostEnvironment env, PdfDbContext context)
+    public PdfController(IWebHostEnvironment env, AppDbContext context)
     {
         _env = env;
         _context = context;
     }
 
-    /// <summary>
-    /// PDF fájl feltöltése
-    /// </summary>
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadPdf(IFormFile file)
@@ -52,9 +48,6 @@ public class PdfController : ControllerBase
         return Ok(new { id = pdfRecord.Id });
     }
 
-    /// <summary>
-    /// PDF letöltése ID alapján
-    /// </summary>
     [HttpGet("{id}")]
     public IActionResult GetPdf(int id)
     {

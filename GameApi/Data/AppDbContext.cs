@@ -9,5 +9,6 @@ namespace GameApi.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Character> Characters { get; set; }
+        public DbSet<PdfFile> PdfFiles { get; set; } // Pdf-ek hozzáadva
     }
 }

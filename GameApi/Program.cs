@@ -8,13 +8,13 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Swagger + JWT security
+// --- Swagger + JWT security ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "GameApi", Version = "v1" });
 
-    // JWT auth setup Swaggerhez
+    // JWT auth setup Swagger-hez
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -22,7 +22,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtdWN1c2tyaXN0b2ZAZ21haWwuY29tIiwiZXhwIjoxNzU4Njk4ODQ5LCJpc3MiOiJHYW1lQXBpIiwiYXVkIjoiR2FtZUFwaVVzZXJzIn0.mzw2Fi7DyaWFBzKoeKpTD5AH0ofvSldQn2rk3pL2KcE"
+        Description = "Írd be: Bearer {token}"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -41,20 +41,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// DbContexts
+// --- DbContext regisztráció ---
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         new MySqlServerVersion(new Version(8, 0, 36))
-    ));
+    )
+);
 
-builder.Services.AddDbContext<PdfDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("PdfConnection"),
-        new MySqlServerVersion(new Version(8, 0, 36))
-    ));
-
-// JWT Authentication
+// --- JWT Authentication ---
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -66,11 +61,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            )
         };
     });
 
-// CORS
+// --- CORS beállítás ---
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -79,21 +76,27 @@ builder.Services.AddCors(options =>
     });
 });
 
+// --- Egyéb szolgáltatások ---
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Swagger UI only in Development
+// --- Swagger UI csak fejlesztésnél ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "GameApi v1");
+    });
 }
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();
