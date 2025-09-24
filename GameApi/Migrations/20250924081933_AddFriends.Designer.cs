@@ -4,6 +4,7 @@ using GameApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DndApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250924081933_AddFriends")]
+    partial class AddFriends
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,98 +47,33 @@ namespace DndApi.Migrations
                     b.ToTable("Characters");
                 });
 
-            modelBuilder.Entity("GameApi.Models.ChatRoom", b =>
+            modelBuilder.Entity("GameApi.Models.Friendship", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ChatRooms");
-                });
-
-            modelBuilder.Entity("GameApi.Models.ChatRoomUser", b =>
-                {
-                    b.Property<int>("ChatRoomId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ChatRoomId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ChatRoomUsers");
-                });
-
-            modelBuilder.Entity("GameApi.Models.Friendship", b =>
-                {
-                    b.Property<int>("RequesterId")
-                        .HasColumnType("int");
 
                     b.Property<int>("AddresseeId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("AcceptedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("Id")
+                    b.Property<int>("RequesterId")
                         .HasColumnType("int");
-
-                    b.Property<DateTime>("RequestedAt")
-                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.HasKey("RequesterId", "AddresseeId");
+                    b.HasKey("Id");
 
                     b.HasIndex("AddresseeId");
 
+                    b.HasIndex("RequesterId");
+
                     b.ToTable("Friendships");
-                });
-
-            modelBuilder.Entity("GameApi.Models.Message", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("ChatRoomId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int?>("RecipientId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SenderId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChatRoomId");
-
-                    b.HasIndex("RecipientId");
-
-                    b.HasIndex("SenderId");
-
-                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("GameApi.Models.User", b =>
@@ -198,37 +136,18 @@ namespace DndApi.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("GameApi.Models.ChatRoomUser", b =>
-                {
-                    b.HasOne("GameApi.Models.ChatRoom", "ChatRoom")
-                        .WithMany("Users")
-                        .HasForeignKey("ChatRoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GameApi.Models.User", "User")
-                        .WithMany("ChatRooms")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ChatRoom");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("GameApi.Models.Friendship", b =>
                 {
                     b.HasOne("GameApi.Models.User", "Addressee")
-                        .WithMany("ReceivedFriendRequests")
+                        .WithMany()
                         .HasForeignKey("AddresseeId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("GameApi.Models.User", "Requester")
-                        .WithMany("SentFriendRequests")
+                        .WithMany()
                         .HasForeignKey("RequesterId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Addressee");
@@ -236,45 +155,9 @@ namespace DndApi.Migrations
                     b.Navigation("Requester");
                 });
 
-            modelBuilder.Entity("GameApi.Models.Message", b =>
-                {
-                    b.HasOne("GameApi.Models.ChatRoom", "ChatRoom")
-                        .WithMany("Messages")
-                        .HasForeignKey("ChatRoomId");
-
-                    b.HasOne("GameApi.Models.User", "Recipient")
-                        .WithMany()
-                        .HasForeignKey("RecipientId");
-
-                    b.HasOne("GameApi.Models.User", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ChatRoom");
-
-                    b.Navigation("Recipient");
-
-                    b.Navigation("Sender");
-                });
-
-            modelBuilder.Entity("GameApi.Models.ChatRoom", b =>
-                {
-                    b.Navigation("Messages");
-
-                    b.Navigation("Users");
-                });
-
             modelBuilder.Entity("GameApi.Models.User", b =>
                 {
                     b.Navigation("Characters");
-
-                    b.Navigation("ChatRooms");
-
-                    b.Navigation("ReceivedFriendRequests");
-
-                    b.Navigation("SentFriendRequests");
                 });
 #pragma warning restore 612, 618
         }

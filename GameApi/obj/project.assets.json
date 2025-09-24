@@ -3612,11 +3612,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Adeniran Ádám\\Documents\\GitHub\\DNDTool\\my-dnd-app\\GameApi\\DndApi.csproj",
+      "projectUniqueName": "C:\\Users\\Adeniran Ádám\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\DndApi.csproj",
       "projectName": "DndApi",
-      "projectPath": "C:\\Users\\Adeniran Ádám\\Documents\\GitHub\\DNDTool\\my-dnd-app\\GameApi\\DndApi.csproj",
+      "projectPath": "C:\\Users\\Adeniran Ádám\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\DndApi.csproj",
       "packagesPath": "C:\\Users\\Adeniran Ádám\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Adeniran Ádám\\Documents\\GitHub\\DNDTool\\my-dnd-app\\GameApi\\obj\\",
+      "outputPath": "C:\\Users\\Adeniran Ádám\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
