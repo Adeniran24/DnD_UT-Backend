@@ -14,6 +14,7 @@ namespace GameApi.Data
         public DbSet<ChatRoom> ChatRooms { get; set; }
         public DbSet<ChatRoomUser> ChatRoomUsers { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<Book> Books { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
