@@ -1,6 +1,7 @@
 using GameApi.Data;
 using GameApi.Models;
 using GameApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -65,6 +66,36 @@ namespace GameApi.Controllers
             var token = _jwt.GenerateToken(user.Id, user.Email);
 
             return Ok(new { token });
+        }
+
+        /// <summary>
+        /// Bejelentkezett user adatai (id, email, username)
+        /// </summary>
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> Me()
+        {
+            var userIdClaim = User.FindFirst("sub")?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users
+                .Where(u => u.Id == userId)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Email,
+                    u.Username
+                })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+                return NotFound("User not found.");
+
+            return Ok(user);
         }
     }
 }

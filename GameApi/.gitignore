@@ -1,6 +1,7 @@
 # Build results
 /bin/
 /obj/
+/Debug/
 
 # Visual Studio files
 .vs/
