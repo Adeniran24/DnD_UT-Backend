@@ -1,16 +1,30 @@
-namespace GameApi.Models;
+using System;
+using System.Collections.Generic;
 
-public class User
+namespace GameApi.Models
 {
-    public int Id { get; set; }
-    public string Email { get; set; } = string.Empty;
-    public string Username { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
+    public partial class User
+    {
+        public int Id { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
 
-    public List<Character> Characters { get; set; } = new();
-     public ICollection<ChatRoomUser> ChatRooms { get; set; } = new List<ChatRoomUser>();
+        // Karakterek
+        public List<Character> Characters { get; set; } = new();
 
-        // Friend navigáció
-    public ICollection<Friendship> SentFriendRequests { get; set; } = new List<Friendship>();
-    public ICollection<Friendship> ReceivedFriendRequests { get; set; } = new List<Friendship>();
+        // Chat szobák
+        public ICollection<ChatRoomUser> ChatRooms { get; set; } = new List<ChatRoomUser>();
+
+        // Barátságok
+        public ICollection<Friendship> SentFriendRequests { get; set; } = new List<Friendship>();
+        public ICollection<Friendship> ReceivedFriendRequests { get; set; } = new List<Friendship>();
+
+        // Community rendszer
+        public ICollection<CommunityUser> Communities { get; set; } = new List<CommunityUser>();
+        public ICollection<CommunityMessage> CommunityMessages { get; set; } = new List<CommunityMessage>();
+
+        // Chat üzenetek (privát/csatorna)
+        public ICollection<Message> Messages { get; set; } = new List<Message>();
+    }
 }

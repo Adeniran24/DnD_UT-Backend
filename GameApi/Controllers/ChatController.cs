@@ -49,7 +49,6 @@ namespace GameApi.Controllers
                 .FirstOrDefaultAsync(r => r.Id == roomId);
             if (room == null) return NotFound("Szoba nem található.");
 
-            // Csak szobatagok hívhatnak
             if (!room.Users.Any(u => u.UserId == userId))
                 return Forbid("Csak szobatagok hívhatnak.");
 
@@ -91,11 +90,11 @@ namespace GameApi.Controllers
         {
             int senderId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            Message message = new Message
+            var message = new CommunityMessage
             {
                 SenderId = senderId,
                 Content = content,
-                CreatedAt = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow
             };
 
             if (roomId.HasValue)
@@ -108,21 +107,22 @@ namespace GameApi.Controllers
                 if (!room.Users.Any(u => u.UserId == senderId))
                     return Forbid("Nem vagy tagja a szobának.");
 
-                message.ChatRoomId = roomId;
+                message.ChannelId = roomId.Value; // Feltételezve, hogy minden szoba egy channel
             }
             else if (!string.IsNullOrEmpty(recipientUsername))
             {
                 var recipient = await _context.Users.FirstOrDefaultAsync(u => u.Username == recipientUsername);
                 if (recipient == null) return NotFound("Felhasználó nem található.");
 
-                message.RecipientId = recipient.Id;
+                // Itt ha privát üzenetet akarsz, érdemes külön mezőt létrehozni a CommunityMessage-ben, pl. RecipientId
+                return BadRequest("Privát üzenetek még nem támogatottak ebben a verzióban.");
             }
             else
             {
                 return BadRequest("Adj meg szobát vagy felhasználót.");
             }
 
-            _context.Messages.Add(message);
+            _context.CommunityMessages.Add(message);
             await _context.SaveChangesAsync();
 
             return Ok("Üzenet elküldve.");
@@ -130,53 +130,23 @@ namespace GameApi.Controllers
 
         // 5. Üzenetek lekérése szobából
         [HttpGet("messages")]
-        public async Task<IActionResult> GetMessages([FromQuery] int? roomId, [FromQuery] string? recipientUsername)
+        public async Task<IActionResult> GetMessages([FromQuery] int channelId)
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            if (roomId.HasValue)
-            {
-                var room = await _context.ChatRooms
-                    .Include(r => r.Users)
-                    .Include(r => r.Messages)
-                    .ThenInclude(m => m.Sender)
-                    .FirstOrDefaultAsync(r => r.Id == roomId.Value);
-
-                if (room == null) return NotFound("Szoba nem található.");
-                if (!room.Users.Any(u => u.UserId == userId))
-                    return Forbid("Nem vagy tagja a szobának.");
-
-                var messages = room.Messages.Select(m => new MessageDto
+            var channelMessages = await _context.CommunityMessages
+                .Include(m => m.Sender)
+                .Where(m => m.ChannelId == channelId)
+                .OrderBy(m => m.Timestamp)
+                .Select(m => new MessageDto
                 {
                     Content = m.Content,
                     SenderUsername = m.Sender.Username,
-                    CreatedAt = m.CreatedAt
-                }).ToList();
+                    CreatedAt = m.Timestamp
+                })
+                .ToListAsync();
 
-                return Ok(messages);
-            }
-            else if (!string.IsNullOrEmpty(recipientUsername))
-            {
-                var recipient = await _context.Users.FirstOrDefaultAsync(u => u.Username == recipientUsername);
-                if (recipient == null) return NotFound("Felhasználó nem található.");
-
-                var messages = await _context.Messages
-                    .Include(m => m.Sender)
-                    .Where(m => (m.SenderId == userId && m.RecipientId == recipient.Id) ||
-                                (m.SenderId == recipient.Id && m.RecipientId == userId))
-                    .OrderBy(m => m.CreatedAt)
-                    .Select(m => new MessageDto
-                    {
-                        Content = m.Content,
-                        SenderUsername = m.Sender.Username,
-                        CreatedAt = m.CreatedAt
-                    })
-                    .ToListAsync();
-
-                return Ok(messages);
-            }
-
-            return BadRequest("Adjon meg szobát vagy felhasználót.");
+            return Ok(channelMessages);
         }
 
         // 6. Kilépés a szobából

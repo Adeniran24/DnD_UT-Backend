@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace GameApi.Controllers
 {
@@ -14,12 +17,12 @@ namespace GameApi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly JwtService _jwt;
+        private readonly IConfiguration _config;
 
-        public AuthController(AppDbContext context, JwtService jwt)
+        public AuthController(AppDbContext context, IConfiguration config)
         {
             _context = context;
-            _jwt = jwt;
+            _config = config;
         }
 
         /// <summary>
@@ -63,19 +66,19 @@ namespace GameApi.Controllers
             if (user.PasswordHash != hash)
                 return Unauthorized("Invalid credentials.");
 
-            var token = _jwt.GenerateToken(user.Id, user.Email);
+            var token = GenerateToken(user.Id, user.Email);
 
             return Ok(new { token });
         }
 
         /// <summary>
-        /// Bejelentkezett user adatai (id, email, username)
+        /// Bejelentkezett user adatai
         /// </summary>
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> Me()
         {
-            var userIdClaim = User.FindFirst("sub")?.Value;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
                 return Unauthorized();
 
@@ -96,6 +99,31 @@ namespace GameApi.Controllers
                 return NotFound("User not found.");
 
             return Ok(user);
+        }
+
+        // --------------------------
+        // JWT token generálás
+        // --------------------------
+        private string GenerateToken(int userId, string email)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                    new Claim(ClaimTypes.Email, email)
+                }),
+                Expires = DateTime.UtcNow.AddHours(12),
+                Issuer = _config["Jwt:Issuer"],
+                Audience = _config["Jwt:Audience"],
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
     }
 }

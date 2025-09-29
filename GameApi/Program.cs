@@ -8,13 +8,15 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Swagger + JWT security ---
+// ----------------------------
+// Swagger + JWT beállítás
+// ----------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "GameApi", Version = "v1" });
 
-    // JWT auth setup Swagger-hez
+    // JWT auth Swaggerhez
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -41,7 +43,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// --- DbContext regisztráció ---
+// ----------------------------
+// DbContext
+// ----------------------------
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -49,10 +53,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-// --- JWT Authentication ---
+// ----------------------------
+// JWT Authentication
+// ----------------------------
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.RequireHttpsMetadata = false; // HTTP alatt engedélyezés
+        options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -67,36 +75,57 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// --- CORS beállítás ---
+// ----------------------------
+// CORS beállítás
+// ----------------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
-// --- Egyéb szolgáltatások ---
+// ----------------------------
+// Egyéb szolgáltatások
+// ----------------------------
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// --- Swagger UI csak fejlesztésnél ---
-if (app.Environment.IsDevelopment())
+// ----------------------------
+// Swagger UI
+// ----------------------------
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "GameApi v1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "GameApi v1");
+});
 
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
-app.UseAuthentication();
-app.UseAuthorization();
+// ----------------------------
+// Middleware sorrend
+// ----------------------------
+app.UseCors("AllowAll");         // CORS előbb
+app.UseAuthentication();         // majd auth
+app.UseAuthorization();          // majd authorization
 
+// ----------------------------
+// HTTPS redirect kikapcsolva
+// ----------------------------
+// app.UseHttpsRedirection();     // ha nincs SSL
+
+// ----------------------------
+// Kontrollerek
+// ----------------------------
 app.MapControllers();
+
+// ----------------------------
+// Publikus IP-re hallgatás
+// ----------------------------
+app.Urls.Clear();
+app.Urls.Add("http://0.0.0.0:5000"); // minden interfészre
 
 app.Run();
