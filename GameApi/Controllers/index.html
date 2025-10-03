@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Equipment Types</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    #dropZone {
+      border: 2px dashed #aaa;
+      padding: 20px;
+      text-align: center;
+      color: #555;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+    #dropZone.dragover {
+      border-color: #333;
+      color: #000;
+      background: #f9f9f9;
+    }
+    ul { list-style: none; padding-left: 0; }
+    li { margin: 5px 0; }
+    code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>Unique Equipment Types</h1>
+
+  <div id="dropZone">Drag & Drop JSON file here or click to select</div>
+  <input type="file" id="fileInput" style="display:none;" accept=".json" />
+
+  <ul id="typesList"></ul>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const typesList = document.getElementById('typesList');
+
+    // Click to open file selector
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Handle file selection
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    // Drag & drop events
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      handleFile(file);
+    });
+
+    // Process JSON file
+    function handleFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = JSON.parse(evt.target.result);
+          const typesSet = new Set();
+          data.forEach(item => {
+            if (item.equipment_category && item.equipment_category.index) {
+              typesSet.add(item.equipment_category.index);
+            }
+          });
+
+          // Display sorted list
+          typesList.innerHTML = '';
+          Array.from(typesSet).sort().forEach(type => {
+            const li = document.createElement('li');
+            li.innerHTML = `<code>${type}</code>`;
+            typesList.appendChild(li);
+          });
+
+        } catch (err) {
+          alert('Invalid JSON file!');
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>

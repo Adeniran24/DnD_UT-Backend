@@ -1,4 +1,5 @@
 using GameApi.Models;
+using GameApi.Models.DND2014;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameApi.Data
@@ -7,22 +8,34 @@ namespace GameApi.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        // Alap entitások
+        // -------------------------------
+        // Existing App Entities
+        // -------------------------------
         public DbSet<User> Users { get; set; }
         public DbSet<Character> Characters { get; set; }
         public DbSet<PdfFile> PdfFiles { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<ChatRoom> ChatRooms { get; set; }
         public DbSet<ChatRoomUser> ChatRoomUsers { get; set; }
-        public DbSet<Message> Messages { get; set; } // ChatRoom üzenetek
+        public DbSet<Message> Messages { get; set; }
         public DbSet<Book> Books { get; set; }
 
-        // Community rendszer
+        // Community system
         public DbSet<Community> Communities { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<CommunityMessage> CommunityMessages { get; set; }
-
         public DbSet<CommunityUser> CommunityUsers { get; set; }
+
+        // -------------------------------
+        // DND2014 Entities
+        // -------------------------------
+        public DbSet<Class> DNDClasses { get; set; }
+        public DbSet<Proficiency> DNDProficiencies { get; set; }
+        public DbSet<Subclass> DNDSubclasses { get; set; }
+        public DbSet<StartingEquipment> DNDStartingEquipment { get; set; }
+        public DbSet<ProficiencyChoice> DNDProficiencyChoices { get; set; }
+        public DbSet<MultiClassing> DNDMultiClassings { get; set; }
+        public DbSet<Prerequisite> DNDPrerequisites { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -63,7 +76,7 @@ namespace GameApi.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // -------------------------------
-            // ChatRoom -> Messages kapcsolat
+            // ChatRoom -> Messages
             // -------------------------------
             modelBuilder.Entity<ChatRoom>()
                 .HasMany(cr => cr.Messages)
@@ -72,7 +85,7 @@ namespace GameApi.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // -------------------------------
-            // Message kapcsolatok
+            // Message relationships
             // -------------------------------
             modelBuilder.Entity<Message>()
                 .HasOne(m => m.Sender)
@@ -87,7 +100,7 @@ namespace GameApi.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // -------------------------------
-            // Community -> Channel -> CommunityMessages
+            // Community -> Channels -> Messages
             // -------------------------------
             modelBuilder.Entity<Community>()
                 .HasMany(c => c.Channels)
@@ -118,6 +131,46 @@ namespace GameApi.Data
             // -------------------------------
             modelBuilder.Entity<CommunityUser>()
                 .HasKey(cu => new { cu.CommunityId, cu.UserId });
+
+            // -------------------------------
+            // DND2014 Relationships
+            // -------------------------------
+
+            // Class -> Proficiencies
+            modelBuilder.Entity<Proficiency>()
+                .HasOne(p => p.Class)
+                .WithMany(c => c.Proficiencies)
+                .HasForeignKey(p => p.ClassId);
+
+            // Class -> Subclasses
+            modelBuilder.Entity<Subclass>()
+                .HasOne(s => s.Class)
+                .WithMany(c => c.Subclasses)
+                .HasForeignKey(s => s.ClassId);
+
+            // Class -> StartingEquipment
+            modelBuilder.Entity<StartingEquipment>()
+                .HasOne(e => e.Class)
+                .WithMany(c => c.StartingEquipment)
+                .HasForeignKey(e => e.ClassId);
+
+            // Class -> ProficiencyChoices
+            modelBuilder.Entity<ProficiencyChoice>()
+                .HasOne(pc => pc.Class)
+                .WithMany(c => c.ProficiencyChoices)
+                .HasForeignKey(pc => pc.ClassId);
+
+            // Class -> MultiClassing (1:1)
+            modelBuilder.Entity<MultiClassing>()
+                .HasOne(m => m.Class)
+                .WithOne(c => c.MultiClassing)
+                .HasForeignKey<MultiClassing>(m => m.ClassId);
+
+            // MultiClassing -> Prerequisites
+            modelBuilder.Entity<Prerequisite>()
+                .HasOne(p => p.MultiClassing)
+                .WithMany(m => m.Prerequisites)
+                .HasForeignKey(p => p.MultiClassingId);
         }
     }
 }
