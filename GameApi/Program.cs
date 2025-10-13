@@ -6,7 +6,11 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = Directory.GetCurrentDirectory()
+});
 
 // ----------------------------
 // Swagger + JWT beállítás
@@ -113,19 +117,13 @@ app.UseAuthentication();         // majd auth
 app.UseAuthorization();          // majd authorization
 
 // ----------------------------
-// HTTPS redirect kikapcsolva
+// Static Files BEFORE routing
 // ----------------------------
-// app.UseHttpsRedirection();     // ha nincs SSL
+app.UseStaticFiles();
 
 // ----------------------------
 // Kontrollerek
 // ----------------------------
 app.MapControllers();
 
-// ----------------------------
-// Publikus IP-re hallgatás
-// ----------------------------
-app.Urls.Clear();
-app.Urls.Add("http://0.0.0.0:5000"); // minden interfészre
-app.UseStaticFiles();
 app.Run();
