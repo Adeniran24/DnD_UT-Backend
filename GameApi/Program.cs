@@ -45,6 +45,9 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
+
+    // ADD THIS: Fix for schema ID conflicts
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
 });
 
 // ----------------------------
