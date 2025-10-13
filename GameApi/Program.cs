@@ -127,5 +127,5 @@ app.MapControllers();
 // ----------------------------
 app.Urls.Clear();
 app.Urls.Add("http://0.0.0.0:5000"); // minden interfészre
-
+app.UseStaticFiles();
 app.Run();

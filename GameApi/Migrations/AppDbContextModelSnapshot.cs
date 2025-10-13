@@ -214,6 +214,201 @@ namespace DndApi.Migrations
                     b.ToTable("CommunityUsers");
                 });
 
+            modelBuilder.Entity("GameApi.Models.DND2014.Class", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("HitDie")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Index")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DNDClasses");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.MultiClassing", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId")
+                        .IsUnique();
+
+                    b.ToTable("DNDMultiClassings");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.Prerequisite", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AbilityScore")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("MinimumScore")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MultiClassingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MultiClassingId");
+
+                    b.ToTable("DNDPrerequisites");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.Proficiency", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Index")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("MultiClassingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.HasIndex("MultiClassingId");
+
+                    b.ToTable("DNDProficiencies");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.ProficiencyChoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Choose")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Desc")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.ToTable("DNDProficiencyChoices");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.StartingEquipment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Index")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.ToTable("DNDStartingEquipment");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.Subclass", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Index")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.ToTable("DNDSubclasses");
+                });
+
             modelBuilder.Entity("GameApi.Models.Friendship", b =>
                 {
                     b.Property<int>("RequesterId")
@@ -325,6 +520,29 @@ namespace DndApi.Migrations
                     b.ToTable("PdfFiles");
                 });
 
+            modelBuilder.Entity("PdfFormData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FieldValuesJson")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("PdfFileId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PdfFormDatas");
+                });
+
             modelBuilder.Entity("GameApi.Models.Channel", b =>
                 {
                     b.HasOne("GameApi.Models.Community", "Community")
@@ -422,6 +640,76 @@ namespace DndApi.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("GameApi.Models.DND2014.MultiClassing", b =>
+                {
+                    b.HasOne("GameApi.Models.DND2014.Class", "Class")
+                        .WithOne("MultiClassing")
+                        .HasForeignKey("GameApi.Models.DND2014.MultiClassing", "ClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Class");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.Prerequisite", b =>
+                {
+                    b.HasOne("GameApi.Models.DND2014.MultiClassing", "MultiClassing")
+                        .WithMany("Prerequisites")
+                        .HasForeignKey("MultiClassingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MultiClassing");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.Proficiency", b =>
+                {
+                    b.HasOne("GameApi.Models.DND2014.Class", "Class")
+                        .WithMany("Proficiencies")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GameApi.Models.DND2014.MultiClassing", null)
+                        .WithMany("Proficiencies")
+                        .HasForeignKey("MultiClassingId");
+
+                    b.Navigation("Class");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.ProficiencyChoice", b =>
+                {
+                    b.HasOne("GameApi.Models.DND2014.Class", "Class")
+                        .WithMany("ProficiencyChoices")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Class");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.StartingEquipment", b =>
+                {
+                    b.HasOne("GameApi.Models.DND2014.Class", "Class")
+                        .WithMany("StartingEquipment")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Class");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.Subclass", b =>
+                {
+                    b.HasOne("GameApi.Models.DND2014.Class", "Class")
+                        .WithMany("Subclasses")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Class");
+                });
+
             modelBuilder.Entity("GameApi.Models.Friendship", b =>
                 {
                     b.HasOne("GameApi.Models.User", "Addressee")
@@ -483,6 +771,27 @@ namespace DndApi.Migrations
                     b.Navigation("Channels");
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.Class", b =>
+                {
+                    b.Navigation("MultiClassing")
+                        .IsRequired();
+
+                    b.Navigation("Proficiencies");
+
+                    b.Navigation("ProficiencyChoices");
+
+                    b.Navigation("StartingEquipment");
+
+                    b.Navigation("Subclasses");
+                });
+
+            modelBuilder.Entity("GameApi.Models.DND2014.MultiClassing", b =>
+                {
+                    b.Navigation("Prerequisites");
+
+                    b.Navigation("Proficiencies");
                 });
 
             modelBuilder.Entity("GameApi.Models.User", b =>

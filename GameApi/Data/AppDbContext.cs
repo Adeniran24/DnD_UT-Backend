@@ -19,6 +19,8 @@ namespace GameApi.Data
         public DbSet<ChatRoomUser> ChatRoomUsers { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<Book> Books { get; set; }
+        public DbSet<PdfFormData> PdfFormDatas { get; set; }
+
 
         // Community system
         public DbSet<Community> Communities { get; set; }
