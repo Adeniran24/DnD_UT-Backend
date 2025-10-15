@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace GameApi.Controllers
@@ -11,63 +12,65 @@ namespace GameApi.Controllers
     {
         public string Index { get; set; }
         public string Name { get; set; }
+
+        [JsonPropertyName("desc")] // Map JSON "desc" to Description
         public List<string> Description { get; set; }
+
         public string Url { get; set; }
     }
 
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/2014/[controller]")]
     public class WeaponPropertiesController : ControllerBase
     {
         private readonly string _jsonFilePath;
+        private List<WeaponProperty> _cachedWeaponProperties;
 
         public WeaponPropertiesController(IWebHostEnvironment env)
         {
-            // Path to your JSON file relative to the project root
             _jsonFilePath = Path.Combine(env.ContentRootPath, "Database", "2014", "5e-SRD-Weapon-Properties.json");
         }
 
-        // GET api/weaponproperties
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<WeaponProperty>>> Get()
+        private async Task<List<WeaponProperty>> LoadWeaponPropertiesAsync()
         {
+            if (_cachedWeaponProperties != null)
+                return _cachedWeaponProperties;
+
             if (!System.IO.File.Exists(_jsonFilePath))
-            {
-                return NotFound("Weapon properties JSON file not found.");
-            }
-
-            try
-            {
-                var json = await System.IO.File.ReadAllTextAsync(_jsonFilePath);
-                var weaponProperties = JsonSerializer.Deserialize<List<WeaponProperty>>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                return Ok(weaponProperties);
-            }
-            catch (JsonException ex)
-            {
-                return BadRequest($"Error parsing JSON: {ex.Message}");
-            }
-        }
-
-        // GET api/weaponproperties/{index}
-        [HttpGet("{index}")]
-        public async Task<ActionResult<WeaponProperty>> GetByIndex(string index)
-        {
-            if (!System.IO.File.Exists(_jsonFilePath))
-            {
-                return NotFound("Weapon properties JSON file not found.");
-            }
+                return null;
 
             var json = await System.IO.File.ReadAllTextAsync(_jsonFilePath);
-            var weaponProperties = JsonSerializer.Deserialize<List<WeaponProperty>>(json, new JsonSerializerOptions
+            _cachedWeaponProperties = JsonSerializer.Deserialize<List<WeaponProperty>>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
-            var property = weaponProperties?.Find(p => p.Index == index);
+            foreach (var wp in _cachedWeaponProperties)
+            {
+                wp.Description ??= new List<string>();
+            }
+
+            return _cachedWeaponProperties;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<WeaponProperty>>> Get()
+        {
+            var weaponProperties = await LoadWeaponPropertiesAsync();
+            if (weaponProperties == null)
+                return NotFound("Weapon properties JSON file not found.");
+
+            return Ok(weaponProperties);
+        }
+
+        [HttpGet("{index}")]
+        public async Task<ActionResult<WeaponProperty>> GetByIndex(string index)
+        {
+            var weaponProperties = await LoadWeaponPropertiesAsync();
+            if (weaponProperties == null)
+                return NotFound("Weapon properties JSON file not found.");
+
+            var property = weaponProperties.Find(p => p.Index == index);
 
             if (property == null)
                 return NotFound($"Weapon property '{index}' not found.");
