@@ -1,6 +1,14 @@
 using GameApi.Models;
-using GameApi.Models.DND2014;
 using Microsoft.EntityFrameworkCore;
+
+// Alias az ütköző név elkerülésére:
+using DNDProficiency = GameApi.Models.DND2014.Proficiency;
+using DNDClass = GameApi.Models.DND2014.Class;
+using DNDSubclass = GameApi.Models.DND2014.Subclass;
+using DNDStartingEquipment = GameApi.Models.DND2014.StartingEquipment;
+using DNDProficiencyChoice = GameApi.Models.DND2014.ProficiencyChoice;
+using DNDMultiClassing = GameApi.Models.DND2014.MultiClassing;
+using DNDPrerequisite = GameApi.Models.DND2014.Prerequisite;
 
 namespace GameApi.Data
 {
@@ -21,7 +29,6 @@ namespace GameApi.Data
         public DbSet<Book> Books { get; set; }
         public DbSet<PdfFormData> PdfFormDatas { get; set; }
 
-
         // Community system
         public DbSet<Community> Communities { get; set; }
         public DbSet<Channel> Channels { get; set; }
@@ -31,13 +38,13 @@ namespace GameApi.Data
         // -------------------------------
         // DND2014 Entities
         // -------------------------------
-        public DbSet<Class> DNDClasses { get; set; }
-        public DbSet<Proficiency> DNDProficiencies { get; set; }
-        public DbSet<Subclass> DNDSubclasses { get; set; }
-        public DbSet<StartingEquipment> DNDStartingEquipment { get; set; }
-        public DbSet<ProficiencyChoice> DNDProficiencyChoices { get; set; }
-        public DbSet<MultiClassing> DNDMultiClassings { get; set; }
-        public DbSet<Prerequisite> DNDPrerequisites { get; set; }
+        public DbSet<DNDClass> DNDClasses { get; set; }
+        public DbSet<DNDProficiency> DNDProficiencies { get; set; }
+        public DbSet<DNDSubclass> DNDSubclasses { get; set; }
+        public DbSet<DNDStartingEquipment> DNDStartingEquipment { get; set; }
+        public DbSet<DNDProficiencyChoice> DNDProficiencyChoices { get; set; }
+        public DbSet<DNDMultiClassing> DNDMultiClassings { get; set; }
+        public DbSet<DNDPrerequisite> DNDPrerequisites { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -139,37 +146,37 @@ namespace GameApi.Data
             // -------------------------------
 
             // Class -> Proficiencies
-            modelBuilder.Entity<Proficiency>()
+            modelBuilder.Entity<DNDProficiency>()
                 .HasOne(p => p.Class)
                 .WithMany(c => c.Proficiencies)
                 .HasForeignKey(p => p.ClassId);
 
             // Class -> Subclasses
-            modelBuilder.Entity<Subclass>()
+            modelBuilder.Entity<DNDSubclass>()
                 .HasOne(s => s.Class)
                 .WithMany(c => c.Subclasses)
                 .HasForeignKey(s => s.ClassId);
 
             // Class -> StartingEquipment
-            modelBuilder.Entity<StartingEquipment>()
+            modelBuilder.Entity<DNDStartingEquipment>()
                 .HasOne(e => e.Class)
                 .WithMany(c => c.StartingEquipment)
                 .HasForeignKey(e => e.ClassId);
 
             // Class -> ProficiencyChoices
-            modelBuilder.Entity<ProficiencyChoice>()
+            modelBuilder.Entity<DNDProficiencyChoice>()
                 .HasOne(pc => pc.Class)
                 .WithMany(c => c.ProficiencyChoices)
                 .HasForeignKey(pc => pc.ClassId);
 
             // Class -> MultiClassing (1:1)
-            modelBuilder.Entity<MultiClassing>()
+            modelBuilder.Entity<DNDMultiClassing>()
                 .HasOne(m => m.Class)
                 .WithOne(c => c.MultiClassing)
-                .HasForeignKey<MultiClassing>(m => m.ClassId);
+                .HasForeignKey<DNDMultiClassing>(m => m.ClassId);
 
             // MultiClassing -> Prerequisites
-            modelBuilder.Entity<Prerequisite>()
+            modelBuilder.Entity<DNDPrerequisite>()
                 .HasOne(p => p.MultiClassing)
                 .WithMany(m => m.Prerequisites)
                 .HasForeignKey(p => p.MultiClassingId);
