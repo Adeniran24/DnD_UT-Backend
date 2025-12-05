@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using GameApi.Hubs; // Add this
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -51,6 +52,11 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // ----------------------------
+// SignalR Hozzáadása
+// ----------------------------
+builder.Services.AddSignalR();
+
+// ----------------------------
 // DbContext
 // ----------------------------
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -61,7 +67,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 // ----------------------------
-// JWT Authentication
+// JWT Authentication + SignalR JWT Support
 // ----------------------------
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -80,20 +86,42 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
             )
         };
+
+        // ADD THIS: JWT support for SignalR
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                
+                // If the request is for our hub...
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && 
+                    path.StartsWithSegments("/chatHub"))
+                {
+                    // Read the token out of the query string
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 // ----------------------------
-// CORS beállítás
+// CORS beállítás - UPDATE for SignalR
 // ----------------------------
-builder.Services.AddCors(options =>
+/*builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); // ADD THIS for SignalR
     });
 });
+*/
+builder.Services.AddCors(c => { c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); });
 
 // ----------------------------
 // Egyéb szolgáltatások
@@ -115,7 +143,8 @@ app.UseSwaggerUI(c =>
 // ----------------------------
 // Middleware sorrend
 // ----------------------------
-app.UseCors("AllowAll");         // CORS előbb
+//app.UseCors("AllowAll");  
+app.UseCors(options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());       // CORS előbb
 app.UseAuthentication();         // majd auth
 app.UseAuthorization();          // majd authorization
 
@@ -123,6 +152,11 @@ app.UseAuthorization();          // majd authorization
 // Static Files BEFORE routing
 // ----------------------------
 app.UseStaticFiles();
+
+// ----------------------------
+// SignalR Endpoint Mapping - ADD THIS
+// ----------------------------
+app.MapHub<ChatHub>("/chatHub");
 
 // ----------------------------
 // Kontrollerek

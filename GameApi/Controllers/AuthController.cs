@@ -1,6 +1,5 @@
 using GameApi.Data;
 using GameApi.Models;
-using GameApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,11 +24,14 @@ namespace GameApi.Controllers
             _config = config;
         }
 
-        /// <summary>
-        /// Regisztráció új userrel
-        /// </summary>
+        // ----------------------------------------------------------
+        // REGISTER
+        // ----------------------------------------------------------
         [HttpPost("register")]
-        public async Task<IActionResult> Register(string email, string username, string password)
+        public async Task<IActionResult> Register(
+            [FromQuery] string email,
+            [FromQuery] string username,
+            [FromQuery] string password)
         {
             if (await _context.Users.AnyAsync(u => u.Email == email))
                 return BadRequest("Email already registered.");
@@ -50,11 +52,13 @@ namespace GameApi.Controllers
             return Ok(new { message = "User registered successfully." });
         }
 
-        /// <summary>
-        /// Bejelentkezés és JWT token generálás
-        /// </summary>
+        // ----------------------------------------------------------
+        // LOGIN + JWT TOKEN
+        // ----------------------------------------------------------
         [HttpPost("login")]
-        public async Task<IActionResult> Login(string email, string password)
+        public async Task<IActionResult> Login(
+            [FromQuery] string email,
+            [FromQuery] string password)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
@@ -67,13 +71,12 @@ namespace GameApi.Controllers
                 return Unauthorized("Invalid credentials.");
 
             var token = GenerateToken(user.Id, user.Email);
-
             return Ok(new { token });
         }
 
-        /// <summary>
-        /// Bejelentkezett user adatai
-        /// </summary>
+        // ----------------------------------------------------------
+        // GET CURRENT LOGGED USER DATA
+        // ----------------------------------------------------------
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> Me()
@@ -101,9 +104,35 @@ namespace GameApi.Controllers
             return Ok(user);
         }
 
-        // --------------------------
-        // JWT token generálás
-        // --------------------------
+        // ----------------------------------------------------------
+        // SALT ENDPOINTS (ha használod őket)
+        // ----------------------------------------------------------
+        [HttpGet("salt")]
+        public IActionResult GetSalt([FromQuery] string email)
+        {
+            if (string.IsNullOrEmpty(email))
+                return BadRequest("Email is required.");
+
+            // Ez csak minta — ide jöhet a te salt logikád
+            var salt = Guid.NewGuid().ToString("N");
+            return Ok(new { email, salt });
+        }
+
+        [HttpPost("salt-send")]
+        public IActionResult SaltSend(
+            [FromQuery] string email,
+            [FromQuery] string salt)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(salt))
+                return BadRequest("Email and salt are required.");
+
+            // Ez is csak minta — ide jöhet pl. email küldés, mentés stb.
+            return Ok(new { message = "Salt accepted.", email, salt });
+        }
+
+        // ----------------------------------------------------------
+        // JWT GENERATION
+        // ----------------------------------------------------------
         private string GenerateToken(int userId, string email)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -119,7 +148,9 @@ namespace GameApi.Controllers
                 Expires = DateTime.UtcNow.AddHours(12),
                 Issuer = _config["Jwt:Issuer"],
                 Audience = _config["Jwt:Audience"],
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
