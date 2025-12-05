@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using GameApi.Hubs; // Add this
+
+
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -155,8 +156,7 @@ app.UseStaticFiles();
 
 // ----------------------------
 // SignalR Endpoint Mapping - ADD THIS
-// ----------------------------
-app.MapHub<ChatHub>("/chatHub");
+
 
 // ----------------------------
 // Kontrollerek

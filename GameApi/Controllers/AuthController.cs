@@ -28,11 +28,14 @@ namespace GameApi.Controllers
         // REGISTER
         // ----------------------------------------------------------
         [HttpPost("register")]
+        
         public async Task<IActionResult> Register(
             [FromQuery] string email,
             [FromQuery] string username,
             [FromQuery] string password)
         {
+            Console.WriteLine($"REGISTER DEBUG -> email:{email} | username:{username} | password:{password}");
+
             if (await _context.Users.AnyAsync(u => u.Email == email))
                 return BadRequest("Email already registered.");
 
