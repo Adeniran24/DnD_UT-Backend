@@ -10,6 +10,9 @@ namespace GameApi.Models
         public string Username { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
 
+        public string Salt { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+
         // Karakterek
         public List<Character> Characters { get; set; } = new();
 
