@@ -111,18 +111,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // ----------------------------
 // CORS beállítás - UPDATE for SignalR
 // ----------------------------
-/*builder.Services.AddCors(options =>
+builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials(); // ADD THIS for SignalR
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "https://dnd-tool.com",
+                "https://www.dnd-tool.com",
+                "https://api.dnd-tool.com"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
-*/
-builder.Services.AddCors(c => { c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); });
+
 
 // ----------------------------
 // Egyéb szolgáltatások
@@ -131,6 +135,7 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+app.UseCors("AllowAll");
 
 // ----------------------------
 // Swagger UI
@@ -144,10 +149,6 @@ app.UseSwaggerUI(c =>
 // ----------------------------
 // Middleware sorrend
 // ----------------------------
-//app.UseCors("AllowAll");  
-app.UseCors(options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());       // CORS előbb
-app.UseAuthentication();         // majd auth
-app.UseAuthorization();          // majd authorization
 
 // ----------------------------
 // Static Files BEFORE routing
