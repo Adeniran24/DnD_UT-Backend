@@ -91,13 +91,13 @@ public async Task<IActionResult> Register(
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
-                return Unauthorized("Invalid credentials.");
+                return Unauthorized("Invalid credentials. 1.");
 
             // BACKEND HASH: SHA256(clientHash)
             var finalHash = ComputeHash(password);
 
             if (user.PasswordHash != finalHash)
-                return Unauthorized("Invalid credentials.");
+                return Unauthorized("Invalid credentials. 2.");
 
             var token = GenerateToken(user.Id, user.Email);
 
