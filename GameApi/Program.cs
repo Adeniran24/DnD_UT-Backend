@@ -185,5 +185,7 @@ app.MapControllers();
 // 🔥 SignalR HUB
 app.MapHub<DirectMessageHub>("/hubs/dm");
 
+Console.WriteLine("ENV = " + builder.Environment.EnvironmentName);
+Console.WriteLine("DB = " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
 app.Run();
