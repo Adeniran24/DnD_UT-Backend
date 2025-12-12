@@ -169,23 +169,17 @@ namespace GameApi.Controllers
         //   await api.saltSend(email, salt);
         // ----------------------------------------------------------
         [HttpPost("salt-send")]
-        public async Task<IActionResult> SaltSend(
-            [FromQuery] string email,
-            [FromQuery] string salt)
-        {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(salt))
-                return BadRequest("Email and salt are required.");
+public async Task<IActionResult> SaltSend([FromBody] SaltSendDto dto)
+{
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+    if (user == null)
+        return NotFound();
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-            if (user == null)
-                return NotFound("User not found.");
+    user.Salt = dto.Salt;
+    await _context.SaveChangesAsync();
 
-            user.Salt = salt;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Salt saved.", email = user.Email, salt = user.Salt });
-        }
-
+    return Ok();
+}
         // ----------------------------------------------------------
         // JWT GENERATION
         // ----------------------------------------------------------
