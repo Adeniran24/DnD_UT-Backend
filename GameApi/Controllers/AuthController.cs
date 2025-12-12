@@ -31,40 +31,39 @@ namespace GameApi.Controllers
         // salt: külön /salt-send endpointtal jön és mentjük el
         // ----------------------------------------------------------
         [HttpPost("register")]
-        public async Task<IActionResult> Register(
-            [FromQuery] string email,
-            [FromQuery] string username,
-            [FromQuery] string password // <- ez itt a clientHash (SHA256(password + salt))
-        )
-        {
-            Console.WriteLine($"REGISTER DEBUG -> email:{email} | username:{username} | clientHash:{password}");
+public async Task<IActionResult> Register(
+    [FromQuery] string email,
+    [FromQuery] string username,
+    [FromQuery] string password, // clientHash
+    [FromQuery] string salt
+)
+{
+    if (string.IsNullOrWhiteSpace(email) ||
+        string.IsNullOrWhiteSpace(username) ||
+        string.IsNullOrWhiteSpace(password) ||
+        string.IsNullOrWhiteSpace(salt))
+    {
+        return BadRequest("Missing data.");
+    }
 
-            if (string.IsNullOrWhiteSpace(email) ||
-                string.IsNullOrWhiteSpace(username) ||
-                string.IsNullOrWhiteSpace(password))
-            {
-                return BadRequest("Email, username and password are required.");
-            }
+    if (await _context.Users.AnyAsync(u => u.Email == email))
+        return BadRequest("Email already registered.");
 
-            if (await _context.Users.AnyAsync(u => u.Email == email))
-                return BadRequest("Email already registered.");
+    var finalHash = ComputeHash(password);
 
-            // BACKEND HASH: SHA256(clientHash)
-            var finalHash = ComputeHash(password);
+    var user = new User
+    {
+        Email = email,
+        Username = username,
+        PasswordHash = finalHash,
+        Salt = salt
+    };
 
-            var user = new User
-            {
-                Email = email,
-                Username = username,
-                PasswordHash = finalHash,
-                // Salt itt még null – később /salt-send tölti ki
-            };
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync();
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "User registered successfully." });
-        }
+    return Ok();
+}
 
         // ----------------------------------------------------------
         // LOGIN
@@ -88,6 +87,7 @@ namespace GameApi.Controllers
             {
                 return BadRequest("Email and password are required.");
             }
+            
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
