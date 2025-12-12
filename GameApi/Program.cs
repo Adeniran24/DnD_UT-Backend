@@ -1,12 +1,11 @@
 using GameApi.Data;
 using GameApi.Services;
+using GameApi.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-
-
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -14,15 +13,19 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     ContentRootPath = Directory.GetCurrentDirectory()
 });
 
-// ----------------------------
-// Swagger + JWT beállítás
-// ----------------------------
+
+// ======================================================
+// Swagger + JWT
+// ======================================================
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "GameApi", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "GameApi",
+        Version = "v1"
+    });
 
-    // JWT auth Swaggerhez
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -30,7 +33,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Írd be: Bearer {token}"
+        Description = "Bearer {token}"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -44,22 +47,24 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
 
-    // ADD THIS: Fix for schema ID conflicts
-    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    // Entity + DTO collision fix
+    c.CustomSchemaIds(type => type.FullName!.Replace("+", "."));
 });
 
-// ----------------------------
-// SignalR Hozzáadása
-// ----------------------------
+
+// ======================================================
+// SignalR
+// ======================================================
 builder.Services.AddSignalR();
 
-// ----------------------------
-// DbContext
-// ----------------------------
+
+// ======================================================
+// DbContext (MySQL)
+// ======================================================
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -67,59 +72,66 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-// ----------------------------
-// JWT Authentication + SignalR JWT Support
-// ----------------------------
+
+// ======================================================
+// JWT Authentication (SignalR kompatibilis)
+// ======================================================
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false; // HTTP alatt engedélyezés
+        options.RequireHttpsMetadata = false;
         options.SaveToken = true;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
+
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
             )
         };
 
-        // ADD THIS: JWT support for SignalR
+        // 🔥 KRITIKUS: SignalR JWT query-stringből
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
                 var accessToken = context.Request.Query["access_token"];
-                
-                // If the request is for our hub...
                 var path = context.HttpContext.Request.Path;
-                if (!string.IsNullOrEmpty(accessToken) && 
-                    path.StartsWithSegments("/chatHub"))
+
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs/chat"))
                 {
-                    // Read the token out of the query string
                     context.Token = accessToken;
                 }
+
                 return Task.CompletedTask;
             }
         };
     });
 
-// ----------------------------
-// CORS beállítás - UPDATE for SignalR
-// ----------------------------
+builder.Services.AddAuthorization();
+
+
+// ======================================================
+// CORS – WebSocket kompatibilis
+// ======================================================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins(
+        policy
+            .WithOrigins(
                 "http://localhost:3000",
                 "http://dnd-tool.com",
-                "http://www.dnd-tool.com",
-                "http://api.dnd-tool.com"
+                "https://dnd-tool.com",
+                "https://api.dnd-tool.com"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -128,40 +140,50 @@ builder.Services.AddCors(options =>
 });
 
 
-// ----------------------------
-// Egyéb szolgáltatások
-// ----------------------------
+// ======================================================
+// Egyéb
+// ======================================================
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
 
-var app = builder.Build();
-app.UseCors("AllowAll");
 
-// ----------------------------
-// Swagger UI
-// ----------------------------
+// ======================================================
+// BUILD
+// ======================================================
+var app = builder.Build();
+
+
+// ======================================================
+// Middleware SORREND (FONTOS)
+// ======================================================
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.UseCors("CorsPolicy");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+
+// ======================================================
+// Swagger
+// ======================================================
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "GameApi v1");
+    c.RoutePrefix = "swagger";
 });
 
-// ----------------------------
-// Middleware sorrend
-// ----------------------------
 
-// ----------------------------
-// Static Files BEFORE routing
-// ----------------------------
-app.UseStaticFiles();
-
-// ----------------------------
-// SignalR Endpoint Mapping - ADD THIS
-
-
-// ----------------------------
-// Kontrollerek
-// ----------------------------
+// ======================================================
+// ENDPOINTS
+// ======================================================
 app.MapControllers();
+
+// 🔥 SignalR HUB
+app.MapHub<DirectMessageHub>("/hubs/dm");
+
 
 app.Run();

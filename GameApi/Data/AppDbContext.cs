@@ -45,6 +45,7 @@ namespace GameApi.Data
         public DbSet<DNDProficiencyChoice> DNDProficiencyChoices { get; set; }
         public DbSet<DNDMultiClassing> DNDMultiClassings { get; set; }
         public DbSet<DNDPrerequisite> DNDPrerequisites { get; set; }
+        public DbSet<DirectMessage> DirectMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -180,6 +181,23 @@ namespace GameApi.Data
                 .HasOne(p => p.MultiClassing)
                 .WithMany(m => m.Prerequisites)
                 .HasForeignKey(p => p.MultiClassingId);
+
+            
+            modelBuilder.Entity<DirectMessage>()
+    .HasOne(dm => dm.Sender)
+    .WithMany()
+    .HasForeignKey(dm => dm.SenderId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+modelBuilder.Entity<DirectMessage>()
+    .HasOne(dm => dm.Receiver)
+    .WithMany()
+    .HasForeignKey(dm => dm.ReceiverId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+
+            
         }
+        
     }
 }
