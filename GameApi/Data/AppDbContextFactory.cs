@@ -11,7 +11,7 @@ namespace GameApi.Data
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
 
             optionsBuilder.UseMySql(
-                "server=127.0.0.1;port=3306;database=dnddb;user=gameuser;password=udu2y7ULY?;",
+                "server=127.0.0.1;port=3306;database=dnddb;user=root;password=udu2y7ULY?;",
                 new MySqlServerVersion(new Version(8, 0, 36))
             );
 
