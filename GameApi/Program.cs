@@ -153,7 +153,7 @@ app.UseSwaggerUI(c =>
 // ----------------------------
 // Static Files BEFORE routing
 // ----------------------------
-app.UseStaticFiles();
+
 
 // ----------------------------
 // SignalR Endpoint Mapping - ADD THIS
