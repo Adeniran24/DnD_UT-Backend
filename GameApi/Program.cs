@@ -6,13 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
-
-
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-{
-    Args = args,
-    ContentRootPath = Directory.GetCurrentDirectory()
-});
+var builder = WebApplication.CreateBuilder(args);
 
 // ----------------------------
 // Swagger + JWT beállítás
@@ -20,7 +14,11 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "GameApi", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "GameApi",
+        Version = "v1"
+    });
 
     // JWT auth Swaggerhez
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -44,21 +42,21 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
 
-    // ADD THIS: Fix for schema ID conflicts
+    // Schema ID ütközések javítása (nested classok)
     c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
 });
 
 // ----------------------------
-// SignalR Hozzáadása
+// SignalR
 // ----------------------------
 builder.Services.AddSignalR();
 
 // ----------------------------
-// DbContext
+// DbContext (MySQL)
 // ----------------------------
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
@@ -70,11 +68,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // ----------------------------
 // JWT Authentication + SignalR JWT Support
 // ----------------------------
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false; // HTTP alatt engedélyezés
+        options.RequireHttpsMetadata = false;
         options.SaveToken = true;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -88,28 +88,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             )
         };
 
-        // ADD THIS: JWT support for SignalR
+        // JWT SignalR támogatás
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
                 var accessToken = context.Request.Query["access_token"];
-                
-                // If the request is for our hub...
                 var path = context.HttpContext.Request.Path;
-                if (!string.IsNullOrEmpty(accessToken) && 
+
+                if (!string.IsNullOrEmpty(accessToken) &&
                     path.StartsWithSegments("/chatHub"))
                 {
-                    // Read the token out of the query string
                     context.Token = accessToken;
                 }
+
                 return Task.CompletedTask;
             }
         };
     });
 
 // ----------------------------
-// CORS beállítás - UPDATE for SignalR
+// CORS (SignalR kompatibilis)
 // ----------------------------
 builder.Services.AddCors(options =>
 {
@@ -127,7 +126,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-
 // ----------------------------
 // Egyéb szolgáltatások
 // ----------------------------
@@ -135,7 +133,14 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+// ----------------------------
+// Middleware pipeline
+// ----------------------------
 app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // ----------------------------
 // Swagger UI
@@ -147,21 +152,11 @@ app.UseSwaggerUI(c =>
 });
 
 // ----------------------------
-// Middleware sorrend
-// ----------------------------
-
-// ----------------------------
-// Static Files BEFORE routing
-// ----------------------------
-
-
-// ----------------------------
-// SignalR Endpoint Mapping - ADD THIS
-
-
-// ----------------------------
 // Kontrollerek
 // ----------------------------
 app.MapControllers();
+
+// (Ha lesz SignalR hubod, IDE jön majd)
+// app.MapHub<ChatHub>("/chatHub");
 
 app.Run();
