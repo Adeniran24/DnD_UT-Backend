@@ -20,7 +20,7 @@ namespace GameApi.Data
         // Existing App Entities
         // -------------------------------
         public DbSet<User> Users { get; set; }
-        public DbSet<Character> Characters { get; set; }
+
         public DbSet<PdfFile> PdfFiles { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<ChatRoom> ChatRooms { get; set; }
@@ -46,6 +46,7 @@ namespace GameApi.Data
         public DbSet<DNDMultiClassing> DNDMultiClassings { get; set; }
         public DbSet<DNDPrerequisite> DNDPrerequisites { get; set; }
         public DbSet<DirectMessage> DirectMessages { get; set; }
+        public DbSet<Character> Characters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -181,6 +182,14 @@ namespace GameApi.Data
                 .HasOne(p => p.MultiClassing)
                 .WithMany(m => m.Prerequisites)
                 .HasForeignKey(p => p.MultiClassingId);
+            // -------------------------------
+            modelBuilder.Entity<Character>()
+    .Property(c => c.created_at)
+    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+modelBuilder.Entity<Character>()
+    .Property(c => c.updated_at)
+    .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             
             modelBuilder.Entity<DirectMessage>()
