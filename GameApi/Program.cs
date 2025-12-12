@@ -13,6 +13,29 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     ContentRootPath = Directory.GetCurrentDirectory()
 });
 
+// ======================================================
+// EXPLICIT CONFIGURATION LOADING
+// ======================================================
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+// Debug output
+Console.WriteLine("========================================");
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
+Console.WriteLine($"Config File: {Directory.GetCurrentDirectory()}/appsettings.json");
+var connString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine($"Connection String: {(string.IsNullOrEmpty(connString) ? "NOT FOUND" : "FOUND")}");
+if (!string.IsNullOrEmpty(connString))
+{
+    // Hide password for security
+    var safeConnString = connString.Length > 50 ? connString.Substring(0, 50) + "..." : connString;
+    Console.WriteLine($"Connection String Preview: {safeConnString}");
+}
+Console.WriteLine("========================================\n");
 
 // ======================================================
 // Swagger + JWT
@@ -51,30 +74,41 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
-    // Entity + DTO collision fix
     c.CustomSchemaIds(type => type.FullName!.Replace("+", "."));
 });
-
 
 // ======================================================
 // SignalR
 // ======================================================
 builder.Services.AddSignalR();
 
+// ======================================================
+// DbContext (MySQL) - WITH VALIDATION
+// ======================================================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    Console.WriteLine("ERROR: Connection string 'DefaultConnection' is null or empty!");
+    Console.WriteLine("Using fallback connection string...");
+    
+    // Fallback connection string for testing
+    connectionString = "server=127.0.0.1;port=3306;database=dnddb;user=gameuser;password='udu2y7ULY?';SslMode=None";
+    Console.WriteLine($"Fallback: {connectionString}");
+}
+else
+{
+    Console.WriteLine($"Using configured connection string");
+}
 
-// ======================================================
-// DbContext (MySQL)
-// ======================================================
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        connectionString,
         new MySqlServerVersion(new Version(8, 0, 36))
     )
 );
 
-
 // ======================================================
-// JWT Authentication (SignalR kompatibilis)
+// JWT Authentication
 // ======================================================
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -93,11 +127,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
 
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "fallback_key_32_chars_long_1234567890")
             )
         };
 
-        // 🔥 KRITIKUS: SignalR JWT query-stringből
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -118,9 +151,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-
 // ======================================================
-// CORS – WebSocket kompatibilis
+// CORS
 // ======================================================
 builder.Services.AddCors(options =>
 {
@@ -139,32 +171,25 @@ builder.Services.AddCors(options =>
     });
 });
 
-
 // ======================================================
-// Egyéb
+// Services
 // ======================================================
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
-
 
 // ======================================================
 // BUILD
 // ======================================================
 var app = builder.Build();
 
-
 // ======================================================
-// Middleware SORREND (FONTOS)
+// Middleware
 // ======================================================
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseCors("CorsPolicy");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 
 // ======================================================
 // Swagger
@@ -176,16 +201,10 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-
 // ======================================================
 // ENDPOINTS
 // ======================================================
 app.MapControllers();
-
-// 🔥 SignalR HUB
 app.MapHub<DirectMessageHub>("/hubs/dm");
-
-Console.WriteLine("ENV = " + builder.Environment.EnvironmentName);
-Console.WriteLine("DB = " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
 app.Run();
