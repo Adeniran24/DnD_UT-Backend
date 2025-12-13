@@ -13,8 +13,8 @@ namespace GameApi.Models
         public string Salt { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
 
-        // Karakterek
-        public List<Character> Characters { get; set; } = new();
+        
+      
 
         // Chat szobák
         public ICollection<ChatRoomUser> ChatRooms { get; set; } = new List<ChatRoomUser>();
