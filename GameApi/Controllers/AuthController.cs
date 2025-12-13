@@ -25,22 +25,18 @@ namespace GameApi.Controllers
         }
 
         // ----------------------------------------------------------
-        // REGISTER
-        // kliens: clientHash = SHA256(password + salt)
-        // backend: finalHash = SHA256(clientHash)
+        // REGISTER (NO SALT HERE – frontend sends it separately)
         // ----------------------------------------------------------
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromQuery] string email,
             [FromQuery] string username,
-            [FromQuery] string password, // clientHash
-            [FromQuery] string salt
+            [FromQuery] string password // clientHash
         )
         {
             if (string.IsNullOrWhiteSpace(email) ||
                 string.IsNullOrWhiteSpace(username) ||
-                string.IsNullOrWhiteSpace(password) ||
-                string.IsNullOrWhiteSpace(salt))
+                string.IsNullOrWhiteSpace(password))
             {
                 return BadRequest("Missing data.");
             }
@@ -55,7 +51,6 @@ namespace GameApi.Controllers
                 Email = email,
                 Username = username,
                 PasswordHash = finalHash,
-                Salt = salt,
                 Role = "User",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -109,9 +104,6 @@ namespace GameApi.Controllers
         public async Task<IActionResult> Me()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null)
-                return Unauthorized();
-
             if (!int.TryParse(userIdClaim, out var userId))
                 return Unauthorized();
 
@@ -123,19 +115,20 @@ namespace GameApi.Controllers
                     u.Email,
                     u.Username,
                     u.Role,
+                    u.IsActive,
                     u.CreatedAt,
                     u.LastLoginAt
                 })
                 .FirstOrDefaultAsync();
 
             if (user == null)
-                return NotFound("User not found.");
+                return NotFound();
 
             return Ok(user);
         }
 
         // ----------------------------------------------------------
-        // SALT LEKÉRÉS LOGINHEZ
+        // GET SALT
         // ----------------------------------------------------------
         [HttpGet("salt")]
         public async Task<IActionResult> GetSalt([FromQuery] string email)
@@ -148,13 +141,13 @@ namespace GameApi.Controllers
                 return NotFound("User not found.");
 
             if (string.IsNullOrWhiteSpace(user.Salt))
-                return BadRequest("Salt not set for this user.");
+                return BadRequest("Salt not set.");
 
-            return Ok(new { email = user.Email, salt = user.Salt });
+            return Ok(new { salt = user.Salt });
         }
 
         // ----------------------------------------------------------
-        // SALT MENTÉS REGISZTRÁCIÓ UTÁN
+        // SAVE SALT (AFTER REGISTER)
         // ----------------------------------------------------------
         [HttpPost("salt-send")]
         public async Task<IActionResult> SaltSend([FromBody] SaltSendDto dto)
@@ -170,7 +163,7 @@ namespace GameApi.Controllers
         }
 
         // ----------------------------------------------------------
-        // JWT GENERATION (ROLE-AL)
+        // JWT GENERATION
         // ----------------------------------------------------------
         private string GenerateToken(User user)
         {
@@ -192,7 +185,7 @@ namespace GameApi.Controllers
                 Audience = _config["Jwt:Audience"],
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
+                    SecurityAlgorithms.HmacSha256)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -200,7 +193,7 @@ namespace GameApi.Controllers
         }
 
         // ----------------------------------------------------------
-        // SHA256 HASH HELPER
+        // HASH HELPER
         // ----------------------------------------------------------
         private string ComputeHash(string input)
         {

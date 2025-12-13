@@ -103,9 +103,10 @@ else
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         connectionString,
-        new MySqlServerVersion(new Version(8, 0, 36))
+        new MariaDbServerVersion(new Version(10, 4, 32))
     )
 );
+
 
 // ======================================================
 // JWT Authentication

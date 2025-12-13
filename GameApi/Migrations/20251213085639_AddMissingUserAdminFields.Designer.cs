@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DndApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251212091446_DirectMessage")]
-    partial class DirectMessage
+    [Migration("20251213085639_AddMissingUserAdminFields")]
+    partial class AddMissingUserAdminFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -80,24 +80,287 @@ namespace DndApi.Migrations
 
             modelBuilder.Entity("GameApi.Models.Character", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("id"));
 
-                    b.Property<string>("Name")
+                    b.Property<string>("additionalFeatures")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("UserId")
+                    b.Property<int>("age")
                         .HasColumnType("int");
 
-                    b.HasKey("Id");
+                    b.Property<string>("alignment")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
-                    b.HasIndex("UserId");
+                    b.Property<string>("allies")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
-                    b.ToTable("Characters");
+                    b.Property<string>("appearance")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("armor")
+                        .HasColumnType("int");
+
+                    b.Property<string>("attacks")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("background")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("backstory")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("bonds")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("cha")
+                        .HasColumnType("int");
+
+                    b.Property<string>("characterName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("classLevel")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("con")
+                        .HasColumnType("int");
+
+                    b.Property<int>("cp")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("created_at")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime(6)")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("deathFailures")
+                        .HasColumnType("int");
+
+                    b.Property<int>("deathSuccesses")
+                        .HasColumnType("int");
+
+                    b.Property<int>("dex")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ep")
+                        .HasColumnType("int");
+
+                    b.Property<string>("equipment")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("eyes")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("featuresFeats")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("flaws")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("gp")
+                        .HasColumnType("int");
+
+                    b.Property<string>("hair")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("height")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("hitDiceCurrent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("hitDiceTotal")
+                        .HasColumnType("int");
+
+                    b.Property<int>("hpCurrent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("hpMax")
+                        .HasColumnType("int");
+
+                    b.Property<int>("hpTemp")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ideals")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("initiative")
+                        .HasColumnType("int");
+
+                    b.Property<int>("inspiration")
+                        .HasColumnType("int");
+
+                    b.Property<int>("int_stat")
+                        .HasColumnType("int")
+                        .HasColumnName("int_stat");
+
+                    b.Property<string>("otherProfs")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("passivePerception")
+                        .HasColumnType("int");
+
+                    b.Property<string>("personalityTraits")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("playerName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("portraitDataUrl")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("pp")
+                        .HasColumnType("int");
+
+                    b.Property<int>("profBonus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("profBonusDuplicate")
+                        .HasColumnType("int");
+
+                    b.Property<string>("race")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("saveProf_cha")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("saveProf_con")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("saveProf_dex")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("saveProf_int")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("saveProf_str")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("saveProf_wis")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_acrobatics")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_animalHandling")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_arcana")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_athletics")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_deception")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_history")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_insight")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_intimidation")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_investigation")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_medicine")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_nature")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_perception")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_performance")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_persuasion")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_religion")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_sleightOfHand")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_stealth")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_survival")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("skin")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("sp")
+                        .HasColumnType("int");
+
+                    b.Property<int>("speed")
+                        .HasColumnType("int");
+
+                    b.Property<string>("spellbook")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("str")
+                        .HasColumnType("int");
+
+                    b.Property<string>("symbol")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("treasure")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("updated_at")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime(6)")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    b.Property<string>("weight")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("wis")
+                        .HasColumnType("int");
+
+                    b.Property<int>("xp")
+                        .HasColumnType("int");
+
+                    b.HasKey("id");
+
+                    b.ToTable("characters");
                 });
 
             modelBuilder.Entity("GameApi.Models.ChatRoom", b =>
@@ -519,7 +782,17 @@ namespace DndApi.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("longtext");
 
@@ -592,17 +865,6 @@ namespace DndApi.Migrations
                         .IsRequired();
 
                     b.Navigation("Community");
-                });
-
-            modelBuilder.Entity("GameApi.Models.Character", b =>
-                {
-                    b.HasOne("GameApi.Models.User", "User")
-                        .WithMany("Characters")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GameApi.Models.ChatRoomUser", b =>
@@ -855,8 +1117,6 @@ namespace DndApi.Migrations
 
             modelBuilder.Entity("GameApi.Models.User", b =>
                 {
-                    b.Navigation("Characters");
-
                     b.Navigation("ChatRooms");
 
                     b.Navigation("Communities");
