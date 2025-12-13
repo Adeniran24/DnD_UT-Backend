@@ -159,12 +159,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("CorsPolicy", policy =>
     {
         policy
-            .WithOrigins(
-                "http://localhost:3000",
-                "http://dnd-tool.com",
-                "https://dnd-tool.com",
-                "https://api.dnd-tool.com"
-            )
+            .AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
