@@ -27,59 +27,53 @@ namespace GameApi.Controllers
         // ----------------------------------------------------------
         // REGISTER
         // kliens: clientHash = SHA256(password + salt)
-        // backend: finalHash = SHA256(clientHash) -> ezt mentjük
-        // salt: külön /salt-send endpointtal jön és mentjük el
+        // backend: finalHash = SHA256(clientHash)
         // ----------------------------------------------------------
         [HttpPost("register")]
-public async Task<IActionResult> Register(
-    [FromQuery] string email,
-    [FromQuery] string username,
-    [FromQuery] string password, // clientHash
-    [FromQuery] string salt
-)
-{
-    if (string.IsNullOrWhiteSpace(email) ||
-        string.IsNullOrWhiteSpace(username) ||
-        string.IsNullOrWhiteSpace(password) ||
-        string.IsNullOrWhiteSpace(salt))
-    {
-        return BadRequest("Missing data.");
-    }
+        public async Task<IActionResult> Register(
+            [FromQuery] string email,
+            [FromQuery] string username,
+            [FromQuery] string password, // clientHash
+            [FromQuery] string salt
+        )
+        {
+            if (string.IsNullOrWhiteSpace(email) ||
+                string.IsNullOrWhiteSpace(username) ||
+                string.IsNullOrWhiteSpace(password) ||
+                string.IsNullOrWhiteSpace(salt))
+            {
+                return BadRequest("Missing data.");
+            }
 
-    if (await _context.Users.AnyAsync(u => u.Email == email))
-        return BadRequest("Email already registered.");
+            if (await _context.Users.AnyAsync(u => u.Email == email))
+                return BadRequest("Email already registered.");
 
-    var finalHash = ComputeHash(password);
+            var finalHash = ComputeHash(password);
 
-    var user = new User
-    {
-        Email = email,
-        Username = username,
-        PasswordHash = finalHash,
-        Salt = salt
-    };
+            var user = new User
+            {
+                Email = email,
+                Username = username,
+                PasswordHash = finalHash,
+                Salt = salt,
+                Role = "User",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
 
-    _context.Users.Add(user);
-    await _context.SaveChangesAsync();
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-    return Ok();
-}
+            return Ok();
+        }
 
         // ----------------------------------------------------------
         // LOGIN
-        // kliens:
-        //   1) GET /auth/salt?email=...
-        //   2) clientHash = SHA256(password + salt)
-        //   3) POST /auth/login?email=...&password=clientHash
-        //
-        // backend:
-        //   finalHash = SHA256(clientHash)
-        //   összehasonlítja a DB-ben lévő PasswordHash-csel
         // ----------------------------------------------------------
         [HttpPost("login")]
         public async Task<IActionResult> Login(
             [FromQuery] string email,
-            [FromQuery] string password // <- clientHash (SHA256(password + salt))
+            [FromQuery] string password // clientHash
         )
         {
             if (string.IsNullOrWhiteSpace(email) ||
@@ -87,25 +81,28 @@ public async Task<IActionResult> Register(
             {
                 return BadRequest("Email and password are required.");
             }
-            
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
-                return Unauthorized("Invalid credentials. 1.");
+                return Unauthorized("Invalid credentials.");
 
-            // BACKEND HASH: SHA256(clientHash)
+            if (!user.IsActive)
+                return Unauthorized("User is banned.");
+
             var finalHash = ComputeHash(password);
-
             if (user.PasswordHash != finalHash)
-                return Unauthorized("Invalid credentials. 2.");
+                return Unauthorized("Invalid credentials.");
 
-            var token = GenerateToken(user.Id, user.Email);
+            user.LastLoginAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            var token = GenerateToken(user);
 
             return Ok(new { token });
         }
 
         // ----------------------------------------------------------
-        // GET CURRENT LOGGED USER DATA
+        // GET CURRENT USER
         // ----------------------------------------------------------
         [HttpGet("me")]
         [Authorize]
@@ -124,7 +121,10 @@ public async Task<IActionResult> Register(
                 {
                     u.Id,
                     u.Email,
-                    u.Username
+                    u.Username,
+                    u.Role,
+                    u.CreatedAt,
+                    u.LastLoginAt
                 })
                 .FirstOrDefaultAsync();
 
@@ -135,13 +135,7 @@ public async Task<IActionResult> Register(
         }
 
         // ----------------------------------------------------------
-        // SALT LEKÉRÉSE LOGINHEZ
-        //
-        // Frontend:
-        //   const res = await api.getSalt(email);
-        //   const salt = res.data.salt;
-        //   const clientHash = SHA256(password + salt);
-        //   login(email, clientHash);
+        // SALT LEKÉRÉS LOGINHEZ
         // ----------------------------------------------------------
         [HttpGet("salt")]
         public async Task<IActionResult> GetSalt([FromQuery] string email)
@@ -160,41 +154,39 @@ public async Task<IActionResult> Register(
         }
 
         // ----------------------------------------------------------
-        // SALT ELMENTÉSE REGISZTRÁCIÓ UTÁN
-        //
-        // Frontend reg flow:
-        //   const salt = generateSalt();
-        //   const clientHash = SHA256(password + salt);
-        //   await register(email, username, clientHash);
-        //   await api.saltSend(email, salt);
+        // SALT MENTÉS REGISZTRÁCIÓ UTÁN
         // ----------------------------------------------------------
         [HttpPost("salt-send")]
-public async Task<IActionResult> SaltSend([FromBody] SaltSendDto dto)
-{
-    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-    if (user == null)
-        return NotFound();
+        public async Task<IActionResult> SaltSend([FromBody] SaltSendDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null)
+                return NotFound();
 
-    user.Salt = dto.Salt;
-    await _context.SaveChangesAsync();
+            user.Salt = dto.Salt;
+            await _context.SaveChangesAsync();
 
-    return Ok();
-}
+            return Ok();
+        }
+
         // ----------------------------------------------------------
-        // JWT GENERATION
+        // JWT GENERATION (ROLE-AL)
         // ----------------------------------------------------------
-        private string GenerateToken(int userId, string email)
+        private string GenerateToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
 
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
+            };
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                    new Claim(ClaimTypes.Email, email)
-                }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddHours(12),
                 Issuer = _config["Jwt:Issuer"],
                 Audience = _config["Jwt:Audience"],
