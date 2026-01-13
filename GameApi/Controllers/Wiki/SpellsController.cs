@@ -116,31 +116,54 @@ namespace DnDAPI.Controllers
         // =========================
         // === Models
         // =========================
-        public class Spell
-        {
-            public string Index { get; set; } = string.Empty;
-            public string Name { get; set; } = string.Empty;
-            public List<string> Desc { get; set; } = new();
-            public List<string>? HigherLevel { get; set; }
-            public string Range { get; set; } = string.Empty;
-            public List<string> Components { get; set; } = new();
-            public string? Material { get; set; }
-            [JsonConverter(typeof(FlexibleIntConverter))] public int Ritual { get; set; }
-            public string Duration { get; set; } = string.Empty;
-            [JsonConverter(typeof(FlexibleIntConverter))] public int Concentration { get; set; }
-            public string CastingTime { get; set; } = string.Empty;
-            [JsonConverter(typeof(FlexibleIntConverter))] public int Level { get; set; }
-            public string? AttackType { get; set; }
-            public Damage? Damage { get; set; }
-            public DC? Dc { get; set; }
-            public School School { get; set; } = new();
-            public List<NamedAPIResource> Classes { get; set; } = new();
-            public List<NamedAPIResource> Subclasses { get; set; } = new();
-            public Dictionary<string, string>? DamageAtSlotLevel { get; set; }
-            public Dictionary<string, string>? DamageAtCharacterLevel { get; set; }
-            public Dictionary<string, string>? HealAtSlotLevel { get; set; }
-            public string Url { get; set; } = string.Empty;
-        }
+       public class Spell
+{
+    public string Index { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public List<string> Desc { get; set; } = new();
+
+    [JsonPropertyName("higher_level")]
+    public List<string>? HigherLevel { get; set; }
+
+    public string Range { get; set; } = string.Empty;
+    public List<string> Components { get; set; } = new();
+    public string? Material { get; set; }
+
+    [JsonConverter(typeof(FlexibleIntConverter))]
+    public int Ritual { get; set; }
+
+    public string Duration { get; set; } = string.Empty;
+
+    [JsonConverter(typeof(FlexibleIntConverter))]
+    public int Concentration { get; set; }
+
+    [JsonPropertyName("casting_time")]
+    public string CastingTime { get; set; } = string.Empty;
+
+    [JsonConverter(typeof(FlexibleIntConverter))]
+    public int Level { get; set; }
+
+    [JsonPropertyName("attack_type")]
+    public string? AttackType { get; set; }
+
+    public Damage? Damage { get; set; }
+    public DC? Dc { get; set; }
+
+    public School School { get; set; } = new();
+    public List<NamedAPIResource> Classes { get; set; } = new();
+    public List<NamedAPIResource> Subclasses { get; set; } = new();
+
+    [JsonPropertyName("damage_at_slot_level")]
+    public Dictionary<string, string>? DamageAtSlotLevel { get; set; }
+
+    [JsonPropertyName("damage_at_character_level")]
+    public Dictionary<string, string>? DamageAtCharacterLevel { get; set; }
+
+    [JsonPropertyName("heal_at_slot_level")]
+    public Dictionary<string, string>? HealAtSlotLevel { get; set; }
+
+    public string Url { get; set; } = string.Empty;
+}
 
         public class Damage
         {

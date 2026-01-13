@@ -152,15 +152,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// ======================================================
-// CORS
-// ======================================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
         policy
-            .SetIsOriginAllowed(_ => true)
+            .WithOrigins(
+                "https://dnd-tool.com",
+                "https://www.dnd-tool.com",
+                "http://localhost:3000"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

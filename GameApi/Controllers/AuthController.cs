@@ -1,3 +1,4 @@
+using System.IO;
 using GameApi.Data;
 using GameApi.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -17,8 +18,9 @@ namespace GameApi.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _config;
-
-        public AuthController(AppDbContext context, IConfiguration config)
+        private readonly IWebHostEnvironment _env;
+    
+        public AuthController(AppDbContext context, IConfiguration config, IWebHostEnvironment env)
         {
             _context = context;
             _config = config;
@@ -117,7 +119,9 @@ namespace GameApi.Controllers
                     u.Role,
                     u.IsActive,
                     u.CreatedAt,
-                    u.LastLoginAt
+                    u.LastLoginAt,
+                    u.ProfilePictureUrl
+
                 })
                 .FirstOrDefaultAsync();
 
@@ -126,6 +130,66 @@ namespace GameApi.Controllers
 
             return Ok(user);
         }
+[HttpPut("me/profile-picture")]
+[Authorize]
+[Consumes("multipart/form-data")]
+[RequestSizeLimit(5 * 1024 * 1024)] // 5MB
+public async Task<IActionResult> UpdateProfilePicture([FromForm] GameApi.Models.ProfilePictureUploadDto dto)
+{
+    var file = dto.File;
+    if (file == null || file.Length == 0)
+        return BadRequest("No file uploaded.");
+
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (!int.TryParse(userIdClaim, out var userId))
+        return Unauthorized();
+
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    if (user == null)
+        return NotFound("User not found.");
+
+    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+    var allowedExt = new HashSet<string> { ".jpg", ".jpeg", ".png", ".webp" };
+    if (!allowedExt.Contains(ext))
+        return BadRequest("Invalid file type.");
+
+    var allowedContentTypes = new HashSet<string> { "image/jpeg", "image/png", "image/webp" };
+    if (!allowedContentTypes.Contains(file.ContentType))
+        return BadRequest("Invalid content type.");
+
+    var webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+    var uploadDir = Path.Combine(webRoot, "uploads", "profile");
+    Directory.CreateDirectory(uploadDir);
+
+    var newFileName = $"{Guid.NewGuid():N}{ext}";
+    var newPhysicalPath = Path.Combine(uploadDir, newFileName);
+
+    var oldUrl = user.ProfilePictureUrl;
+
+    await using (var stream = System.IO.File.Create(newPhysicalPath))
+    {
+        await file.CopyToAsync(stream);
+    }
+
+    var newUrl = $"/uploads/profile/{newFileName}";
+    user.ProfilePictureUrl = newUrl;
+    await _context.SaveChangesAsync();
+
+    if (!string.IsNullOrWhiteSpace(oldUrl) &&
+        oldUrl.StartsWith("/uploads/profile/", StringComparison.OrdinalIgnoreCase))
+    {
+        var oldFileName = Path.GetFileName(oldUrl);
+        var oldPhysicalPath = Path.Combine(uploadDir, oldFileName);
+
+        if (System.IO.File.Exists(oldPhysicalPath))
+        {
+            try { System.IO.File.Delete(oldPhysicalPath); } catch { }
+        }
+    }
+
+    return Ok(new { profilePictureUrl = newUrl });
+}
+
 
         // ----------------------------------------------------------
         // GET SALT

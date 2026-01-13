@@ -14,6 +14,9 @@ namespace GameApi.Models
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public string? ProfilePictureUrl { get; set; } // pl: "/uploads/profile/abc.jpg"
+
+
     // 🔐 ADMIN DASHBOARDHOZ
     public string Role { get; set; } = "User"; // User | DM | Admin
     public bool IsActive { get; set; } = true;
