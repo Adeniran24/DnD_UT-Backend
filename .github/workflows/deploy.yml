@@ -1,4 +1,4 @@
-name: Deploy to Server
+name: Deploy DND API to Production
 
 on:
   push:
@@ -10,40 +10,124 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
-    
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
     
+    - name: Verify project structure
+      run: |
+        echo "📁 Repository structure:"
+        find . -type f -name "*.csproj" -o -name "*.sln" | head -10
+        echo ""
+        echo "📂 DNDapi/GameApi contents:"
+        ls -la DNDapi/GameApi/ 2>/dev/null || echo "Directory not found"
+    
     - name: Restore dependencies
-      run: dotnet restore DNDapi/GameApi/DndApi.csproj
+      run: |
+        echo "📦 Restoring dependencies..."
+        cd DNDapi/GameApi
+        dotnet restore
     
     - name: Build
-      run: dotnet build DNDapi/GameApi/DndApi.csproj --configuration Release --no-restore
+      run: |
+        echo "🔨 Building..."
+        cd DNDapi/GameApi
+        dotnet build --configuration Release --no-restore
     
     - name: Publish
-      run: dotnet publish DNDapi/GameApi/DndApi.csproj --configuration Release --no-build --output ./publish
+      run: |
+        echo "📤 Publishing..."
+        cd DNDapi/GameApi
+        dotnet publish \
+          --configuration Release \
+          --no-build \
+          --output ./publish \
+          --self-contained false
+        
+        echo "📄 Published files:"
+        ls -la publish/
+        echo ""
+        echo "🔍 Looking for DLL:"
+        find publish -name "*.dll" | head -5
     
-    - name: Deploy to Server via SSH
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        port: ${{ secrets.SERVER_PORT }}
-        source: "publish/*"
-        target: "/var/www/dndtool/DNDapi/GameApi/publish/"
+    - name: Setup SSH connection
+      run: |
+        echo "🔑 Setting up SSH..."
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
+        
+        # Test connection
+        echo "Testing SSH connection..."
+        ssh -p "${{ secrets.SERVER_PORT }}" "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+          "echo '✅ SSH connection successful'; hostname; date"
     
-    - name: Restart Service on Server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        port: ${{ secrets.SERVER_PORT }}
-        script: |
-          cd /var/www/dndtool/DNDapi/GameApi
-          sudo systemctl restart dnd-gameapi || echo "Service restart failed, trying to start..."
+    - name: Upload files to server
+      run: |
+        echo "⬆️ Uploading files to server..."
+        
+        # First, clean the publish directory on server
+        ssh -p "${{ secrets.SERVER_PORT }}" "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+          "rm -rf /var/www/dndtool/DNDapi/GameApi/publish/* 2>/dev/null || true"
+        
+        # Upload all files
+        scp -r -P "${{ secrets.SERVER_PORT }}" \
+          ./DNDapi/GameApi/publish/* \
+          "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/dndtool/DNDapi/GameApi/publish/"
+        
+        echo "✅ Files uploaded"
+    
+    - name: Deploy on server
+      run: |
+        echo "🎯 Deploying on server..."
+        
+        ssh -p "${{ secrets.SERVER_PORT }}" "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" "
+          echo '=== GitHub Actions Deployment ==='
+          echo 'Repository: ${{ github.repository }}'
+          echo 'Commit: ${{ github.sha | slice: 0, 8 }}'
+          echo 'Branch: ${{ github.ref_name }}'
+          echo 'Triggered by: ${{ github.actor }}'
+          echo 'Time: $(date)'
+          echo ''
+          
+          # Run the deploy script
+          if [ -f /usr/local/bin/deploy-dnd.sh ]; then
+            echo 'Running deploy script...'
+            /usr/local/bin/deploy-dnd.sh
+          else
+            echo '❌ ERROR: deploy-dnd.sh not found!'
+            exit 1
+          fi
+        "
+    
+    - name: Verify deployment
+      run: |
+        echo "✅ Verifying deployment..."
+        
+        ssh -p "${{ secrets.SERVER_PORT }}" "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" "
+          echo '=== Verification ==='
+          echo ''
+          echo '1. Service status:'
           sudo systemctl status dnd-gameapi --no-pager
+          echo ''
+          echo '2. Application test:'
+          curl -s http://localhost:5000 || echo 'Application not responding'
+          echo ''
+          echo '3. Health check:'
+          curl -s http://localhost:5000/health || echo 'Health endpoint not available'
+          echo ''
+          echo '4. Listening ports:'
+          sudo ss -tulpn | grep dotnet || echo 'No dotnet processes listening'
+        "
+    
+    - name: Send notification (optional)
+      if: success()
+      run: |
+        echo "🎉 Deployment successful!"
+        echo "🌐 Application URL: http://${{ secrets.SERVER_HOST }}:5000"
+        echo "📅 Time: $(date)"
