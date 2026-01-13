@@ -92,7 +92,7 @@ if (string.IsNullOrEmpty(connectionString))
     Console.WriteLine("Using fallback connection string...");
     
     // Fallback connection string for testing
-    connectionString = "server=127.0.0.1;port=3306;database=dnddb;user=gameuser;password='udu2y7ULY?';SslMode=None";
+    connectionString = "server=212.48.254.1;port=3306;database=dnddb;user=root;password='udu2y7ULY?'";
     Console.WriteLine($"Fallback: {connectionString}");
 }
 else
