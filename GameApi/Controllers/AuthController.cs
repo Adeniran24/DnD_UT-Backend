@@ -1,4 +1,4 @@
-using GameApi.Data;
+/*using GameApi.Data;
 using GameApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -204,3 +204,4 @@ namespace GameApi.Controllers
         }
     }
 }
+*/
