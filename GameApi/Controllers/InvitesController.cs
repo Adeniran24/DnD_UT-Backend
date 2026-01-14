@@ -59,6 +59,35 @@ namespace GameApi.Controllers
             };
         }
 
+        [HttpGet("servers/{id:int}/invites")]
+        public async Task<ActionResult<IEnumerable<InviteDto>>> GetInvites(int id)
+        {
+            var membership = await _context.CommunityUsers
+                .FirstOrDefaultAsync(cu => cu.CommunityId == id && cu.UserId == Me);
+
+            if (membership == null || membership.Role == CommunityRole.Member)
+            {
+                return Forbid();
+            }
+
+            var invites = await _context.CommunityInvites
+                .Where(i => i.CommunityId == id)
+                .OrderByDescending(i => i.CreatedAt)
+                .Select(i => new InviteDto
+                {
+                    Code = i.Code,
+                    CommunityId = i.CommunityId,
+                    CreatedById = i.CreatedById,
+                    Uses = i.Uses,
+                    MaxUses = i.MaxUses,
+                    ExpiresAt = i.ExpiresAt,
+                    CreatedAt = i.CreatedAt
+                })
+                .ToListAsync();
+
+            return invites;
+        }
+
         [HttpPost("invites/{code}/join")]
         public async Task<IActionResult> JoinInvite(string code)
         {

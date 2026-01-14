@@ -12,6 +12,14 @@ namespace GameApi.DTOs
         public string? CoverImage { get; set; }
     }
 
+    public class ServerUpdateDto
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public bool? IsPrivate { get; set; }
+        public string? CoverImage { get; set; }
+    }
+
     public class ServerSummaryDto
     {
         public int Id { get; set; }
@@ -48,6 +56,18 @@ namespace GameApi.DTOs
         public bool IsReadOnly { get; set; }
     }
 
+    public class CommunityChannelUpdateDto
+    {
+        public string? Name { get; set; }
+        public ChannelType? Type { get; set; }
+        public bool? IsPrivate { get; set; }
+        public string? Topic { get; set; }
+        public int? ParentId { get; set; }
+        public int? Position { get; set; }
+        public bool? IsArchived { get; set; }
+        public bool? IsReadOnly { get; set; }
+    }
+
     public class ChannelDto
     {
         public int Id { get; set; }
@@ -79,6 +99,7 @@ namespace GameApi.DTOs
         public bool IsPinned { get; set; }
         public bool IsDeleted { get; set; }
         public List<CommunityMessageReactionDto> Reactions { get; set; } = new();
+        public List<string> MyReactions { get; set; } = new();
     }
 
     public class CommunityMessageReactionCreateDto

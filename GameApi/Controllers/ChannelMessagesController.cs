@@ -90,6 +90,11 @@ namespace GameApi.Controllers
                             Emoji = g.Key,
                             Count = g.Count()
                         })
+                        .ToList(),
+                    MyReactions = m.Reactions
+                        .Where(r => r.UserId == Me)
+                        .Select(r => r.Emoji)
+                        .Distinct()
                         .ToList()
                 })
                 .ToList();
@@ -156,7 +161,8 @@ namespace GameApi.Controllers
                 EditedAt = message.EditedAt,
                 IsPinned = message.IsPinned,
                 IsDeleted = message.IsDeleted,
-                Reactions = new List<CommunityMessageReactionDto>()
+                Reactions = new List<CommunityMessageReactionDto>(),
+                MyReactions = new List<string>()
             };
         }
     }

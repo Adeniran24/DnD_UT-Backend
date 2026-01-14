@@ -205,6 +205,71 @@ namespace GameApi.Controllers
             });
         }
 
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> UpdateServer(int id, ServerUpdateDto dto)
+        {
+            var membership = await _context.CommunityUsers
+                .FirstOrDefaultAsync(cu => cu.CommunityId == id && cu.UserId == Me);
+
+            if (membership == null || membership.Role == CommunityRole.Member)
+            {
+                return Forbid();
+            }
+
+            var server = await _context.Communities.FindAsync(id);
+            if (server == null)
+            {
+                return NotFound();
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+            {
+                server.Name = dto.Name.Trim();
+            }
+
+            if (dto.Description != null)
+            {
+                server.Description = dto.Description.Trim();
+            }
+
+            if (dto.IsPrivate.HasValue)
+            {
+                server.IsPrivate = dto.IsPrivate.Value;
+            }
+
+            if (dto.CoverImage != null)
+            {
+                server.CoverImage = dto.CoverImage;
+            }
+
+            server.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteServer(int id)
+        {
+            var membership = await _context.CommunityUsers
+                .FirstOrDefaultAsync(cu => cu.CommunityId == id && cu.UserId == Me);
+
+            if (membership == null || membership.Role != CommunityRole.Owner)
+            {
+                return Forbid();
+            }
+
+            var server = await _context.Communities.FindAsync(id);
+            if (server == null)
+            {
+                return NotFound();
+            }
+
+            _context.Communities.Remove(server);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
         [HttpGet("{id:int}/channels")]
         public async Task<ActionResult<IEnumerable<ChannelDto>>> GetChannels(int id)
         {
@@ -281,6 +346,106 @@ namespace GameApi.Controllers
                 IsArchived = channel.IsArchived,
                 IsReadOnly = channel.IsReadOnly
             };
+        }
+
+        [HttpPatch("{id:int}/channels/{channelId:int}")]
+        public async Task<ActionResult<ChannelDto>> UpdateChannel(int id, int channelId, CommunityChannelUpdateDto dto)
+        {
+            var membership = await _context.CommunityUsers
+                .FirstOrDefaultAsync(cu => cu.CommunityId == id && cu.UserId == Me);
+
+            if (membership == null || membership.Role == CommunityRole.Member)
+            {
+                return Forbid();
+            }
+
+            var channel = await _context.Channels
+                .FirstOrDefaultAsync(ch => ch.Id == channelId && ch.CommunityId == id);
+
+            if (channel == null)
+            {
+                return NotFound();
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+            {
+                channel.Name = dto.Name.Trim();
+            }
+
+            if (dto.Type.HasValue)
+            {
+                channel.Type = dto.Type.Value;
+            }
+
+            if (dto.IsPrivate.HasValue)
+            {
+                channel.IsPrivate = dto.IsPrivate.Value;
+            }
+
+            if (dto.Topic != null)
+            {
+                channel.Topic = dto.Topic;
+            }
+
+            if (dto.ParentId.HasValue)
+            {
+                channel.ParentId = dto.ParentId;
+            }
+
+            if (dto.Position.HasValue)
+            {
+                channel.Position = dto.Position.Value;
+            }
+
+            if (dto.IsArchived.HasValue)
+            {
+                channel.IsArchived = dto.IsArchived.Value;
+            }
+
+            if (dto.IsReadOnly.HasValue)
+            {
+                channel.IsReadOnly = dto.IsReadOnly.Value;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return new ChannelDto
+            {
+                Id = channel.Id,
+                CommunityId = channel.CommunityId,
+                Name = channel.Name,
+                Type = channel.Type,
+                IsPrivate = channel.IsPrivate,
+                Topic = channel.Topic,
+                ParentId = channel.ParentId,
+                Position = channel.Position,
+                IsArchived = channel.IsArchived,
+                IsReadOnly = channel.IsReadOnly
+            };
+        }
+
+        [HttpDelete("{id:int}/channels/{channelId:int}")]
+        public async Task<IActionResult> DeleteChannel(int id, int channelId)
+        {
+            var membership = await _context.CommunityUsers
+                .FirstOrDefaultAsync(cu => cu.CommunityId == id && cu.UserId == Me);
+
+            if (membership == null || membership.Role == CommunityRole.Member)
+            {
+                return Forbid();
+            }
+
+            var channel = await _context.Channels
+                .FirstOrDefaultAsync(ch => ch.Id == channelId && ch.CommunityId == id);
+
+            if (channel == null)
+            {
+                return NotFound();
+            }
+
+            _context.Channels.Remove(channel);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }
