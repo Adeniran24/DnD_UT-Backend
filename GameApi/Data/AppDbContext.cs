@@ -1,6 +1,6 @@
 using GameApi.Models;
 using Microsoft.EntityFrameworkCore;
-
+using GameApi.Controllers;
 // Alias az ütköző név elkerülésére:
 using DNDProficiency = GameApi.Models.DND2014.Proficiency;
 using DNDClass = GameApi.Models.DND2014.Class;
@@ -207,6 +207,9 @@ modelBuilder.Entity<DirectMessage>()
 
             
         }
+        public DbSet<MapForgeController.MapCampaign> MapCampaigns { get; set; }
+
         
     }
+    
 }
