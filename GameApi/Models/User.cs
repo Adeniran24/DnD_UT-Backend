@@ -28,6 +28,9 @@ namespace GameApi.Models
     public ICollection<Friendship> ReceivedFriendRequests { get; set; } = new List<Friendship>();
     public ICollection<CommunityUser> Communities { get; set; } = new List<CommunityUser>();
     public ICollection<CommunityMessage> CommunityMessages { get; set; } = new List<CommunityMessage>();
+    public ICollection<CommunityMessageReaction> CommunityMessageReactions { get; set; } = new List<CommunityMessageReaction>();
+    public ICollection<CommunityInvite> CommunityInvitesCreated { get; set; } = new List<CommunityInvite>();
+    public ICollection<VoiceChannelState> VoiceChannelStates { get; set; } = new List<VoiceChannelState>();
     public ICollection<Message> Messages { get; set; } = new List<Message>();
 }
 

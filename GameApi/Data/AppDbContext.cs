@@ -34,6 +34,9 @@ namespace GameApi.Data
         public DbSet<Channel> Channels { get; set; }
         public DbSet<CommunityMessage> CommunityMessages { get; set; }
         public DbSet<CommunityUser> CommunityUsers { get; set; }
+        public DbSet<CommunityInvite> CommunityInvites { get; set; }
+        public DbSet<CommunityMessageReaction> CommunityMessageReactions { get; set; }
+        public DbSet<VoiceChannelState> VoiceChannelStates { get; set; }
 
         // -------------------------------
         // DND2014 Entities
@@ -125,6 +128,12 @@ namespace GameApi.Data
                 .HasForeignKey(m => m.ChannelId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Channel>()
+                .HasMany(ch => ch.Children)
+                .WithOne(ch => ch.Parent)
+                .HasForeignKey(ch => ch.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<CommunityMessage>()
                 .HasOne(m => m.Sender)
                 .WithMany(u => u.CommunityMessages)
@@ -142,6 +151,53 @@ namespace GameApi.Data
             // -------------------------------
             modelBuilder.Entity<CommunityUser>()
                 .HasKey(cu => new { cu.CommunityId, cu.UserId });
+
+            modelBuilder.Entity<CommunityInvite>()
+                .HasIndex(ci => ci.Code)
+                .IsUnique();
+
+            modelBuilder.Entity<CommunityInvite>()
+                .HasOne(ci => ci.Community)
+                .WithMany(c => c.Invites)
+                .HasForeignKey(ci => ci.CommunityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CommunityInvite>()
+                .HasOne(ci => ci.CreatedBy)
+                .WithMany(u => u.CommunityInvitesCreated)
+                .HasForeignKey(ci => ci.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CommunityMessageReaction>()
+                .HasIndex(r => new { r.MessageId, r.UserId, r.Emoji })
+                .IsUnique();
+
+            modelBuilder.Entity<CommunityMessageReaction>()
+                .HasOne(r => r.Message)
+                .WithMany(m => m.Reactions)
+                .HasForeignKey(r => r.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CommunityMessageReaction>()
+                .HasOne(r => r.User)
+                .WithMany(u => u.CommunityMessageReactions)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VoiceChannelState>()
+                .HasKey(vs => new { vs.ChannelId, vs.UserId });
+
+            modelBuilder.Entity<VoiceChannelState>()
+                .HasOne(vs => vs.Channel)
+                .WithMany(ch => ch.VoiceStates)
+                .HasForeignKey(vs => vs.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VoiceChannelState>()
+                .HasOne(vs => vs.User)
+                .WithMany(u => u.VoiceChannelStates)
+                .HasForeignKey(vs => vs.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // -------------------------------
             // DND2014 Relationships

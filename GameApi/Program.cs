@@ -140,7 +140,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var path = context.HttpContext.Request.Path;
 
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    path.StartsWithSegments("/hubs/chat"))
+                    (path.StartsWithSegments("/hubs/chat") ||
+                     path.StartsWithSegments("/hubs/dm") ||
+                     path.StartsWithSegments("/hubs/community") ||
+                     path.StartsWithSegments("/hubs/voice")))
                 {
                     context.Token = accessToken;
                 }
@@ -203,5 +206,7 @@ app.UseSwaggerUI(c =>
 // ======================================================
 app.MapControllers();
 app.MapHub<DirectMessageHub>("/hubs/dm");
+app.MapHub<CommunityHub>("/hubs/community");
+app.MapHub<VoiceHub>("/hubs/voice");
 
 app.Run();
