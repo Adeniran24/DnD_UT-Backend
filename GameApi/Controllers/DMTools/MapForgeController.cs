@@ -61,6 +61,52 @@ namespace GameApi.Controllers
             }
         }
 
+        // ===== Image upload helpers =====
+        private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg", "image/png", "image/webp"
+        };
+
+        // NOTE: ha nagyobbat akarsz, emeld meg (frontendben is jó jelezni)
+        private const long MaxImageBytes = 5 * 1024 * 1024; // 5MB
+
+        private string UploadRootPath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+        private async Task<string> SaveImageAsync(IFormFile file, string subfolder, string fileNameBase)
+        {
+            if (file is null || file.Length == 0)
+                throw new ValidationException("No file uploaded.");
+
+            if (file.Length > MaxImageBytes)
+                throw new ValidationException("Image too large. Max 5MB.");
+
+            if (!AllowedImageTypes.Contains(file.ContentType))
+                throw new ValidationException("Invalid image type. Allowed: jpg, png, webp.");
+
+            Directory.CreateDirectory(UploadRootPath);
+            var folderPath = Path.Combine(UploadRootPath, subfolder);
+            Directory.CreateDirectory(folderPath);
+
+            var ext = file.ContentType switch
+            {
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/webp" => ".webp",
+                _ => ".img"
+            };
+
+            // Biztonságos filename (ne a user file nevét használd)
+            var safeName = $"{fileNameBase}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Random.Shared.Next(1000, 9999)}{ext}";
+            var fullPath = Path.Combine(folderPath, safeName);
+
+            await using var stream = System.IO.File.Create(fullPath);
+            await file.CopyToAsync(stream);
+
+            // Relatív URL: /uploads/...
+            // Frontenden célszerű API_BASE + imageUrl, ha nem abszolút.
+            return $"/uploads/{subfolder}/{safeName}";
+        }
+
         private static Campaign CreateStarterCampaign(string name)
         {
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -69,19 +115,43 @@ namespace GameApi.Controllers
             {
                 Id = NodeId(),
                 Position = new Position { X = 0, Y = 0 },
-                Data = new NodeData { Label = "Starting Town", Type = "Location", Tags = new List<string> { "home" }, Notes = "" }
+                Data = new NodeData
+                {
+                    Label = "Starting Town",
+                    Type = "Location",
+                    Tags = new List<string> { "home" },
+                    Notes = "",
+                    ImageUrl = null,
+                    Statblock = null
+                }
             };
             var n2 = new FlowNode
             {
                 Id = NodeId(),
                 Position = new Position { X = 260, Y = 120 },
-                Data = new NodeData { Label = "Local Patron", Type = "NPC", Tags = new List<string> { "quest" }, Notes = "" }
+                Data = new NodeData
+                {
+                    Label = "Local Patron",
+                    Type = "NPC",
+                    Tags = new List<string> { "quest" },
+                    Notes = "",
+                    ImageUrl = null,
+                    Statblock = null
+                }
             };
             var n3 = new FlowNode
             {
                 Id = NodeId(),
                 Position = new Position { X = -220, Y = 180 },
-                Data = new NodeData { Label = "Old Ruins", Type = "Location", Tags = new List<string> { "danger" }, Notes = "" }
+                Data = new NodeData
+                {
+                    Label = "Old Ruins",
+                    Type = "Location",
+                    Tags = new List<string> { "danger" },
+                    Notes = "",
+                    ImageUrl = null,
+                    Statblock = null
+                }
             };
 
             var e1 = new FlowEdge
@@ -105,7 +175,8 @@ namespace GameApi.Controllers
                 Name = name.Trim(),
                 Nodes = new List<FlowNode> { n1, n2, n3 },
                 Edges = new List<FlowEdge> { e1, e2 },
-                UpdatedAt = now
+                UpdatedAt = now,
+                CoverImageUrl = null
             };
         }
 
@@ -138,7 +209,8 @@ namespace GameApi.Controllers
                     Name = e.Name,
                     UpdatedAt = e.UpdatedAt,
                     NodeCount = nodes.Count,
-                    EdgeCount = edges.Count
+                    EdgeCount = edges.Count,
+                    CoverImageUrl = e.CoverImageUrl
                 };
             }).ToList();
 
@@ -164,7 +236,8 @@ namespace GameApi.Controllers
                 Name = entity.Name,
                 Nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>()),
                 Edges = FromJson(entity.EdgesJson ?? "[]", new List<FlowEdge>()),
-                UpdatedAt = entity.UpdatedAt
+                UpdatedAt = entity.UpdatedAt,
+                CoverImageUrl = entity.CoverImageUrl
             });
         }
 
@@ -186,7 +259,8 @@ namespace GameApi.Controllers
                     Name = name,
                     Nodes = new List<FlowNode>(),
                     Edges = new List<FlowEdge>(),
-                    UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    CoverImageUrl = null
                 };
 
             var entity = new MapCampaign
@@ -196,7 +270,8 @@ namespace GameApi.Controllers
                 Name = campaign.Name,
                 NodesJson = ToJson(campaign.Nodes),
                 EdgesJson = ToJson(campaign.Edges),
-                UpdatedAt = campaign.UpdatedAt
+                UpdatedAt = campaign.UpdatedAt,
+                CoverImageUrl = campaign.CoverImageUrl
             };
 
             _db.MapCampaigns.Add(entity);
@@ -233,7 +308,8 @@ namespace GameApi.Controllers
                 Name = entity.Name,
                 Nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>()),
                 Edges = FromJson(entity.EdgesJson ?? "[]", new List<FlowEdge>()),
-                UpdatedAt = entity.UpdatedAt
+                UpdatedAt = entity.UpdatedAt,
+                CoverImageUrl = entity.CoverImageUrl
             });
         }
 
@@ -261,7 +337,8 @@ namespace GameApi.Controllers
                 Name = entity.Name,
                 Nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>()),
                 Edges = FromJson(entity.EdgesJson ?? "[]", new List<FlowEdge>()),
-                UpdatedAt = entity.UpdatedAt
+                UpdatedAt = entity.UpdatedAt,
+                CoverImageUrl = entity.CoverImageUrl
             });
         }
 
@@ -281,6 +358,39 @@ namespace GameApi.Controllers
             await _db.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // =========================================================
+        // Campaign cover image upload
+        // =========================================================
+
+        // POST /api/mapforge/campaigns/{id}/cover
+        // multipart/form-data: file
+        [HttpPost("campaigns/{id}/cover")]
+        [RequestSizeLimit(MaxImageBytes)]
+        public async Task<ActionResult<object>> UploadCampaignCover(string id, [FromForm] IFormFile file)
+        {
+            var userId = GetCurrentUserId();
+
+            var entity = await _db.MapCampaigns
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (entity is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            try
+            {
+                var url = await SaveImageAsync(file, $"campaigns/{entity.Id}", "cover");
+                entity.CoverImageUrl = url;
+                entity.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                await _db.SaveChangesAsync();
+
+                return Ok(new { coverImageUrl = entity.CoverImageUrl, updatedAt = entity.UpdatedAt });
+            }
+            catch (ValidationException ve)
+            {
+                return BadRequest(new ApiError("invalid_image", ve.Message));
+            }
         }
 
         // =========================================================
@@ -306,8 +416,21 @@ namespace GameApi.Controllers
             {
                 Id = string.IsNullOrWhiteSpace(req.Id) ? NodeId() : req.Id!,
                 Position = req.Position ?? new Position { X = 0, Y = 0 },
-                Data = req.Data ?? new NodeData { Label = "New Node", Type = "Location", Tags = new List<string>(), Notes = "" }
+                Data = req.Data ?? new NodeData
+                {
+                    Label = "New Node",
+                    Type = "Location",
+                    Tags = new List<string>(),
+                    Notes = "",
+                    ImageUrl = null,
+                    Statblock = null
+                }
             };
+
+            // Ha a client nem küldte, legyen biztosan default
+            node.Data ??= new NodeData();
+            node.Data.ImageUrl ??= null;
+            // Statblock maradhat null (Monster esetén majd UI küldi)
 
             nodes.Add(node);
 
@@ -342,12 +465,20 @@ namespace GameApi.Controllers
             if (req.Data is not null)
             {
                 node.Data ??= new NodeData();
+
                 node.Data.Label = req.Data.Label ?? node.Data.Label;
                 node.Data.Type = req.Data.Type ?? node.Data.Type;
                 node.Data.Notes = req.Data.Notes ?? node.Data.Notes;
 
                 if (req.Data.Tags is not null)
                     node.Data.Tags = req.Data.Tags;
+
+                // ÚJ mezők
+                if (req.Data.ImageUrl is not null)
+                    node.Data.ImageUrl = req.Data.ImageUrl;
+
+                if (req.Data.Statblock is not null)
+                    node.Data.Statblock = req.Data.Statblock;
             }
 
             entity.NodesJson = ToJson(nodes);
@@ -379,6 +510,76 @@ namespace GameApi.Controllers
 
             entity.NodesJson = ToJson(nodes);
             entity.EdgesJson = ToJson(edges);
+            entity.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // =========================================================
+        // Node image upload/remove (kép a node-hoz)
+        // =========================================================
+
+        // POST /api/mapforge/campaigns/{id}/nodes/{nodeId}/image
+        // multipart/form-data: file
+        [HttpPost("campaigns/{id}/nodes/{nodeId}/image")]
+        [RequestSizeLimit(MaxImageBytes)]
+        public async Task<ActionResult<object>> UploadNodeImage(string id, string nodeId, [FromForm] IFormFile file)
+        {
+            var userId = GetCurrentUserId();
+
+            var entity = await _db.MapCampaigns
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (entity is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>());
+            var node = nodes.FirstOrDefault(n => n.Id == nodeId);
+
+            if (node is null)
+                return NotFound(new ApiError("node_not_found", "Node not found."));
+
+            try
+            {
+                var url = await SaveImageAsync(file, $"campaigns/{entity.Id}/nodes", nodeId);
+                node.Data ??= new NodeData();
+                node.Data.ImageUrl = url;
+
+                entity.NodesJson = ToJson(nodes);
+                entity.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                await _db.SaveChangesAsync();
+
+                return Ok(new { imageUrl = url, updatedAt = entity.UpdatedAt });
+            }
+            catch (ValidationException ve)
+            {
+                return BadRequest(new ApiError("invalid_image", ve.Message));
+            }
+        }
+
+        // DELETE /api/mapforge/campaigns/{id}/nodes/{nodeId}/image
+        [HttpDelete("campaigns/{id}/nodes/{nodeId}/image")]
+        public async Task<IActionResult> RemoveNodeImage(string id, string nodeId)
+        {
+            var userId = GetCurrentUserId();
+
+            var entity = await _db.MapCampaigns
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (entity is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>());
+            var node = nodes.FirstOrDefault(n => n.Id == nodeId);
+
+            if (node is null)
+                return NotFound(new ApiError("node_not_found", "Node not found."));
+
+            node.Data ??= new NodeData();
+            node.Data.ImageUrl = null;
+
+            entity.NodesJson = ToJson(nodes);
             entity.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             await _db.SaveChangesAsync();
 
@@ -473,6 +674,9 @@ namespace GameApi.Controllers
             public long UpdatedAt { get; set; }
 
             public int OwnerUserId { get; set; }
+
+            // ÚJ: kampány borítókép URL (relatív: /uploads/...)
+            public string? CoverImageUrl { get; set; }
         }
 
         // API model
@@ -487,6 +691,9 @@ namespace GameApi.Controllers
             public List<FlowNode> Nodes { get; set; } = new();
             public List<FlowEdge> Edges { get; set; } = new();
             public long UpdatedAt { get; set; }
+
+            // ÚJ
+            public string? CoverImageUrl { get; set; }
         }
 
         public sealed class CampaignSummary
@@ -496,12 +703,20 @@ namespace GameApi.Controllers
             public long UpdatedAt { get; set; }
             public int NodeCount { get; set; }
             public int EdgeCount { get; set; }
+
+            // ÚJ
+            public string? CoverImageUrl { get; set; }
         }
 
         public sealed class FlowNode
         {
             [Required]
             public string Id { get; set; } = default!;
+
+            // ReactFlow node "type" (render) mező optional; ha kell, add hozzá később.
+            // Most a te frontended használhatja default-ként.
+            [JsonPropertyName("type")]
+            public string? RenderType { get; set; }
 
             [Required]
             public Position Position { get; set; } = new();
@@ -532,6 +747,14 @@ namespace GameApi.Controllers
 
             [JsonPropertyName("notes")]
             public string Notes { get; set; } = "";
+
+            // ÚJ: node kép
+            [JsonPropertyName("imageUrl")]
+            public string? ImageUrl { get; set; }
+
+            // ÚJ: Monster statblock (tetszőleges JSON)
+            [JsonPropertyName("statblock")]
+            public JsonElement? Statblock { get; set; }
         }
 
         public sealed class FlowEdge
@@ -588,6 +811,10 @@ namespace GameApi.Controllers
             public string? Type { get; set; }
             public List<string>? Tags { get; set; }
             public string? Notes { get; set; }
+
+            // ÚJ
+            public string? ImageUrl { get; set; }
+            public JsonElement? Statblock { get; set; }
         }
 
         public sealed class CreateEdgeRequest

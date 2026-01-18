@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.HttpOverrides;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -90,7 +91,7 @@ if (string.IsNullOrEmpty(connectionString))
 {
     Console.WriteLine("ERROR: Connection string 'DefaultConnection' is null or empty!");
     Console.WriteLine("Using fallback connection string...");
-    
+
     // Fallback connection string for testing
     connectionString = "server=212.48.254.1;port=3306;database=dnddb;user=root;password='udu2y7ULY?'";
     Console.WriteLine($"Fallback: {connectionString}");
@@ -106,7 +107,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         new MariaDbServerVersion(new Version(10, 4, 32))
     )
 );
-
 
 // ======================================================
 // JWT Authentication
@@ -178,13 +178,44 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
 
 // ======================================================
+// Proxy support (Nginx / reverse proxy)
+// (Nem kötelező, de hasznos ha Request.Scheme/Host kellene)
+// ======================================================
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
+    // Biztonságosabb: explicit proxy IP-ket megadhatsz később
+    // options.KnownProxies.Add(IPAddress.Parse("127.0.0.1"));
+});
+
+// ======================================================
 // BUILD
 // ======================================================
 var app = builder.Build();
 
 // ======================================================
+// Ensure uploads folder exists
+// (wwwroot/uploads - hogy ne ott dőljön el az első feltöltésnél)
+// ======================================================
+try
+{
+    var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"), "uploads");
+    Directory.CreateDirectory(uploadsPath);
+    Console.WriteLine($"Uploads directory ensured: {uploadsPath}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"WARNING: Could not create uploads directory: {ex.Message}");
+}
+
+// ======================================================
 // Middleware
 // ======================================================
+app.UseForwardedHeaders();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors("CorsPolicy");
