@@ -15,10 +15,12 @@ namespace GameApi.Controllers
     public class MapForgeController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly IWebHostEnvironment _env;
 
-        public MapForgeController(AppDbContext db)
+        public MapForgeController(AppDbContext db, IWebHostEnvironment env)
         {
             _db = db;
+            _env = env;
         }
 
         // ===== JSON options (ReactFlow kompatibilis) =====
@@ -70,7 +72,8 @@ namespace GameApi.Controllers
         // NOTE: ha nagyobbat akarsz, emeld meg (frontendben is jó jelezni)
         private const long MaxImageBytes = 5 * 1024 * 1024; // 5MB
 
-        private string UploadRootPath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+        private string UploadRootPath =>
+            Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "uploads");
 
         private async Task<string> SaveImageAsync(IFormFile file, string subfolder, string fileNameBase)
         {

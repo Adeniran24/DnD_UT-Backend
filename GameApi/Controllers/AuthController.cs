@@ -24,6 +24,7 @@ namespace GameApi.Controllers
         {
             _context = context;
             _config = config;
+            _env = env;
         }
 
         // ----------------------------------------------------------
