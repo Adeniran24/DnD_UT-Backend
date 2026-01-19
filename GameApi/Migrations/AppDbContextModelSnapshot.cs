@@ -933,8 +933,8 @@ namespace DndApi.Migrations
                     b.Property<string>("ProfilePictureUrl")
                         .HasColumnType("longtext");
 
-                    b.Property<string>(\"ProfileThemeJson\")
-                        .HasColumnType(\"longtext\");
+                    b.Property<string>("ProfileThemeJson")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Role")
                         .IsRequired()
