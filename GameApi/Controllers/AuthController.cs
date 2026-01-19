@@ -9,6 +9,7 @@ using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace GameApi.Controllers
 {
@@ -121,7 +122,8 @@ namespace GameApi.Controllers
                     u.IsActive,
                     u.CreatedAt,
                     u.LastLoginAt,
-                    u.ProfilePictureUrl
+                    u.ProfilePictureUrl,
+                    u.ProfileThemeJson
 
                 })
                 .FirstOrDefaultAsync();
@@ -130,6 +132,67 @@ namespace GameApi.Controllers
                 return NotFound();
 
             return Ok(user);
+        }
+
+        [HttpGet("me/theme")]
+        [Authorize]
+        public async Task<IActionResult> GetProfileTheme()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users
+                .Where(u => u.Id == userId)
+                .Select(u => new { u.ProfileThemeJson })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+                return NotFound();
+
+            if (string.IsNullOrWhiteSpace(user.ProfileThemeJson))
+                return Ok(new { theme = (object?)null });
+
+            try
+            {
+                var theme = JsonSerializer.Deserialize<JsonElement>(user.ProfileThemeJson);
+                return Ok(new { theme });
+            }
+            catch
+            {
+                return Ok(new { theme = (object?)null });
+            }
+        }
+
+        public class ProfileThemeUpdateDto
+        {
+            public JsonElement Theme { get; set; }
+        }
+
+        [HttpPut("me/theme")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfileTheme([FromBody] ProfileThemeUpdateDto dto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            if (dto.Theme.ValueKind == JsonValueKind.Undefined || dto.Theme.ValueKind == JsonValueKind.Null)
+            {
+                user.ProfileThemeJson = null;
+            }
+            else
+            {
+                user.ProfileThemeJson = dto.Theme.GetRawText();
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { theme = dto.Theme.ValueKind == JsonValueKind.Undefined ? (object?)null : dto.Theme });
         }
 [HttpPut("me/profile-picture")]
 [Authorize]

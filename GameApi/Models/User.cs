@@ -15,6 +15,7 @@ namespace GameApi.Models
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public string? ProfilePictureUrl { get; set; } // pl: "/uploads/profile/abc.jpg"
+    public string? ProfileThemeJson { get; set; }
 
 
     // 🔐 ADMIN DASHBOARDHOZ
