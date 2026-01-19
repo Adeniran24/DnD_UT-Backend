@@ -9,7 +9,7 @@ namespace DndSubclasses.Controllers
     [Route("api/[controller]")]
     public class SubclassesController : ControllerBase
     {
-        private static List<Subclass> _subclasses;
+        private static List<Subclass> _subclasses = new();
 
         public SubclassesController()
         {
@@ -47,42 +47,42 @@ namespace DndSubclasses.Controllers
         // Models
         public class Subclass
         {
-            public string Index { get; set; }
-            public ClassInfo Class { get; set; }
-            public string Name { get; set; }
-            public string SubclassFlavor { get; set; }
-            public List<string> Description { get; set; }
-            public string SubclassLevels { get; set; }
-            public string Url { get; set; }
-            public List<SubclassSpell> Spells { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public ClassInfo Class { get; set; } = new();
+            public string Name { get; set; } = string.Empty;
+            public string SubclassFlavor { get; set; } = string.Empty;
+            public List<string> Description { get; set; } = new();
+            public string SubclassLevels { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
+            public List<SubclassSpell> Spells { get; set; } = new();
         }
 
         public class ClassInfo
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class SubclassSpell
         {
-            public List<Prerequisite> Prerequisites { get; set; }
-            public SpellInfo Spell { get; set; }
+            public List<Prerequisite> Prerequisites { get; set; } = new();
+            public SpellInfo Spell { get; set; } = new();
         }
 
         public class Prerequisite
         {
-            public string Index { get; set; }
-            public string Type { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Type { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class SpellInfo
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         // Converter methods
@@ -96,9 +96,9 @@ namespace DndSubclasses.Controllers
             };
         }
 
-        private List<SubclassSpell> ConvertToSpells(List<dynamic> spellsData)
+        private List<SubclassSpell> ConvertToSpells(List<dynamic>? spellsData)
         {
-            if (spellsData == null) return null;
+            if (spellsData == null) return new List<SubclassSpell>();
 
             var spells = new List<SubclassSpell>();
             foreach (var spellData in spellsData)
@@ -145,7 +145,7 @@ namespace DndSubclasses.Controllers
                     Description = new List<string> { "For some barbarians, rage is a means to an end--that end being violence. The Path of the Berserker is a path of untrammeled fury, slick with blood. As you enter the berserker's rage, you thrill in the chaos of battle, heedless of your own health or well-being." },
                     SubclassLevels = "/api/2014/subclasses/berserker/levels",
                     Url = "/api/2014/subclasses/berserker",
-                    Spells = null
+                    Spells = new List<SubclassSpell>()
                 },
                 new Subclass
                 {
@@ -156,7 +156,7 @@ namespace DndSubclasses.Controllers
                     Description = new List<string> { "Bards of the College of Lore know something about most things, collecting bits of knowledge from sources as diverse as scholarly tomes and peasant tales. Whether singing folk ballads in taverns or elaborate compositions in royal courts, these bards use their gifts to hold audiences spellbound. When the applause dies down, the audience members might find themselves questioning everything they held to be true, from their faith in the priesthood of the local temple to their loyalty to the king. The loyalty of these bards lies in the pursuit of beauty and truth, not in fealty to a monarch or following the tenets of a deity. A noble who keeps such a bard as a herald or advisor knows that the bard would rather be honest than politic. The college's members gather in libraries and sometimes in actual colleges, complete with classrooms and dormitories, to share their lore with one another. They also meet at festivals or affairs of state, where they can expose corruption, unravel lies, and poke fun at self-important figures of authority." },
                     SubclassLevels = "/api/2014/subclasses/lore/levels",
                     Url = "/api/2014/subclasses/lore",
-                    Spells = null
+                    Spells = new List<SubclassSpell>()
                 },
                 new Subclass
                 {

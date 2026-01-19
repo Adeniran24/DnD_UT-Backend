@@ -108,9 +108,9 @@ public class PdfController : ControllerBase
         if (pdfRecord == null) return NotFound();
 
         var dataRecord = _context.PdfFormDatas.FirstOrDefault(x => x.PdfFileId == id);
-        Dictionary<string, string> fieldData = new Dictionary<string, string>();
-        if (dataRecord != null)
-            fieldData = JsonConvert.DeserializeObject<Dictionary<string, string>>(dataRecord.FieldValuesJson);
+        var fieldData = dataRecord != null
+            ? JsonConvert.DeserializeObject<Dictionary<string, string>>(dataRecord.FieldValuesJson) ?? new Dictionary<string, string>()
+            : new Dictionary<string, string>();
 
         var templatePath = Path.Combine(_env.ContentRootPath, "PdfTemplates", "CharacterSheetTemplate.pdf");
         if (!System.IO.File.Exists(templatePath))

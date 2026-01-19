@@ -9,7 +9,7 @@ namespace DndTraits.Controllers
     [Route("api/[controller]")]
     public class TraitsController : ControllerBase
     {
-        private static List<Trait> _traits;
+        private static List<Trait> _traits = new();
 
         public TraitsController()
         {
@@ -73,148 +73,148 @@ namespace DndTraits.Controllers
         // Models
         public class Trait
         {
-            public string Index { get; set; }
-            public List<RaceReference> Races { get; set; }
-            public List<SubraceReference> Subraces { get; set; }
-            public string Name { get; set; }
-            public List<string> Description { get; set; }
-            public List<ProficiencyReference> Proficiencies { get; set; }
-            public ProficiencyChoice ProficiencyChoices { get; set; }
-            public LanguageChoice LanguageOptions { get; set; }
-            public TraitSpecific TraitSpecific { get; set; }
-            public ParentTrait Parent { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public List<RaceReference> Races { get; set; } = new();
+            public List<SubraceReference> Subraces { get; set; } = new();
+            public string Name { get; set; } = string.Empty;
+            public List<string> Description { get; set; } = new();
+            public List<ProficiencyReference> Proficiencies { get; set; } = new();
+            public ProficiencyChoice? ProficiencyChoices { get; set; }
+            public LanguageChoice? LanguageOptions { get; set; }
+            public TraitSpecific? TraitSpecific { get; set; }
+            public ParentTrait? Parent { get; set; }
+            public string Url { get; set; } = string.Empty;
         }
 
         public class RaceReference
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class SubraceReference
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class ProficiencyReference
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class ProficiencyChoice
         {
             public int Choose { get; set; }
-            public string Type { get; set; }
-            public OptionSet From { get; set; }
+            public string Type { get; set; } = string.Empty;
+            public OptionSet? From { get; set; }
         }
 
         public class LanguageChoice
         {
             public int Choose { get; set; }
-            public string Type { get; set; }
-            public OptionSet From { get; set; }
+            public string Type { get; set; } = string.Empty;
+            public OptionSet? From { get; set; }
         }
 
         public class OptionSet
         {
-            public string OptionSetType { get; set; }
-            public List<Option> Options { get; set; }
+            public string OptionSetType { get; set; } = string.Empty;
+            public List<Option> Options { get; set; } = new();
         }
 
         public class Option
         {
-            public string OptionType { get; set; }
-            public ReferenceItem Item { get; set; }
+            public string OptionType { get; set; } = string.Empty;
+            public ReferenceItem Item { get; set; } = new();
         }
 
         public class ReferenceItem
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class TraitSpecific
         {
-            public SpellChoice SpellOptions { get; set; }
-            public SubtraitChoice SubtraitOptions { get; set; }
-            public DamageTypeReference DamageType { get; set; }
-            public BreathWeapon BreathWeapon { get; set; }
+            public SpellChoice? SpellOptions { get; set; }
+            public SubtraitChoice? SubtraitOptions { get; set; }
+            public DamageTypeReference? DamageType { get; set; }
+            public BreathWeapon? BreathWeapon { get; set; }
         }
 
         public class SpellChoice
         {
             public int Choose { get; set; }
-            public OptionSet From { get; set; }
-            public string Type { get; set; }
+            public OptionSet? From { get; set; }
+            public string Type { get; set; } = string.Empty;
         }
 
         public class SubtraitChoice
         {
             public int Choose { get; set; }
-            public OptionSet From { get; set; }
-            public string Type { get; set; }
+            public OptionSet? From { get; set; }
+            public string Type { get; set; } = string.Empty;
         }
 
         public class DamageTypeReference
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class BreathWeapon
         {
-            public string Name { get; set; }
-            public string Description { get; set; }
-            public AreaOfEffect AreaOfEffect { get; set; }
-            public Usage Usage { get; set; }
-            public DifficultyClass Dc { get; set; }
-            public List<BreathWeaponDamage> Damage { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public AreaOfEffect AreaOfEffect { get; set; } = new();
+            public Usage Usage { get; set; } = new();
+            public DifficultyClass Dc { get; set; } = new();
+            public List<BreathWeaponDamage> Damage { get; set; } = new();
         }
 
         public class AreaOfEffect
         {
             public int Size { get; set; }
-            public string Type { get; set; }
+            public string Type { get; set; } = string.Empty;
         }
 
         public class Usage
         {
-            public string Type { get; set; }
+            public string Type { get; set; } = string.Empty;
             public int Times { get; set; }
         }
 
         public class DifficultyClass
         {
-            public AbilityScoreReference DcType { get; set; }
-            public string SuccessType { get; set; }
+            public AbilityScoreReference DcType { get; set; } = new();
+            public string SuccessType { get; set; } = string.Empty;
         }
 
         public class AbilityScoreReference
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class BreathWeaponDamage
         {
-            public DamageTypeReference DamageType { get; set; }
-            public Dictionary<string, string> DamageAtCharacterLevel { get; set; }
+            public DamageTypeReference DamageType { get; set; } = new();
+            public Dictionary<string, string> DamageAtCharacterLevel { get; set; } = new();
         }
 
         public class ParentTrait
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         // Converter methods
@@ -248,23 +248,26 @@ namespace DndTraits.Controllers
             };
         }
 
-        private OptionSet ConvertToOptionSet(dynamic optionSetData)
+        private OptionSet? ConvertToOptionSet(dynamic optionSetData)
         {
             if (optionSetData == null) return null;
 
             var options = new List<Option>();
-            foreach (var optionData in optionSetData.options)
+            if (optionSetData.options != null)
             {
-                options.Add(new Option
+                foreach (var optionData in optionSetData.options)
                 {
-                    OptionType = optionData.option_type,
-                    Item = new ReferenceItem
+                    options.Add(new Option
                     {
-                        Index = optionData.item.index,
-                        Name = optionData.item.name,
-                        Url = optionData.item.url
-                    }
-                });
+                        OptionType = optionData.option_type ?? string.Empty,
+                        Item = new ReferenceItem
+                        {
+                            Index = optionData.item?.index ?? string.Empty,
+                            Name = optionData.item?.name ?? string.Empty,
+                            Url = optionData.item?.url ?? string.Empty
+                        }
+                    });
+                }
             }
 
             return new OptionSet
@@ -274,31 +277,31 @@ namespace DndTraits.Controllers
             };
         }
 
-        private ProficiencyChoice ConvertToProficiencyChoice(dynamic choiceData)
+        private ProficiencyChoice? ConvertToProficiencyChoice(dynamic choiceData)
         {
             if (choiceData == null) return null;
 
             return new ProficiencyChoice
             {
                 Choose = choiceData.choose,
-                Type = choiceData.type,
+                Type = choiceData.type ?? string.Empty,
                 From = ConvertToOptionSet(choiceData.@from)
             };
         }
 
-        private LanguageChoice ConvertToLanguageChoice(dynamic choiceData)
+        private LanguageChoice? ConvertToLanguageChoice(dynamic choiceData)
         {
             if (choiceData == null) return null;
 
             return new LanguageChoice
             {
                 Choose = choiceData.choose,
-                Type = choiceData.type,
+                Type = choiceData.type ?? string.Empty,
                 From = ConvertToOptionSet(choiceData.@from)
             };
         }
 
-        private TraitSpecific ConvertToTraitSpecific(dynamic specificData)
+        private TraitSpecific? ConvertToTraitSpecific(dynamic specificData)
         {
             if (specificData == null) return null;
 
@@ -311,7 +314,7 @@ namespace DndTraits.Controllers
             };
         }
 
-        private SpellChoice ConvertToSpellChoice(dynamic spellChoiceData)
+        private SpellChoice? ConvertToSpellChoice(dynamic spellChoiceData)
         {
             if (spellChoiceData == null) return null;
 
@@ -319,11 +322,11 @@ namespace DndTraits.Controllers
             {
                 Choose = spellChoiceData.choose,
                 From = ConvertToOptionSet(spellChoiceData.@from),
-                Type = spellChoiceData.type
+                Type = spellChoiceData.type ?? string.Empty
             };
         }
 
-        private SubtraitChoice ConvertToSubtraitChoice(dynamic subtraitChoiceData)
+        private SubtraitChoice? ConvertToSubtraitChoice(dynamic subtraitChoiceData)
         {
             if (subtraitChoiceData == null) return null;
 
@@ -331,23 +334,23 @@ namespace DndTraits.Controllers
             {
                 Choose = subtraitChoiceData.choose,
                 From = ConvertToOptionSet(subtraitChoiceData.@from),
-                Type = subtraitChoiceData.type
+                Type = subtraitChoiceData.type ?? string.Empty
             };
         }
 
-        private DamageTypeReference ConvertToDamageTypeReference(dynamic damageTypeData)
+        private DamageTypeReference? ConvertToDamageTypeReference(dynamic damageTypeData)
         {
             if (damageTypeData == null) return null;
 
             return new DamageTypeReference
             {
-                Index = damageTypeData.index,
-                Name = damageTypeData.name,
-                Url = damageTypeData.url
+                Index = damageTypeData.index ?? string.Empty,
+                Name = damageTypeData.name ?? string.Empty,
+                Url = damageTypeData.url ?? string.Empty
             };
         }
 
-        private BreathWeapon ConvertToBreathWeapon(dynamic breathWeaponData)
+        private BreathWeapon? ConvertToBreathWeapon(dynamic breathWeaponData)
         {
             if (breathWeaponData == null) return null;
 
@@ -358,50 +361,50 @@ namespace DndTraits.Controllers
                 {
                     damage.Add(new BreathWeaponDamage
                     {
-                        DamageType = ConvertToDamageTypeReference(damageData.damage_type),
+                        DamageType = ConvertToDamageTypeReference(damageData.damage_type) ?? new DamageTypeReference(),
                         DamageAtCharacterLevel = ((Dictionary<string, object>)damageData.damage_at_character_level)
-                            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString())
+                            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? string.Empty)
                     });
                 }
             }
 
             return new BreathWeapon
             {
-                Name = breathWeaponData.name,
-                Description = breathWeaponData.desc,
+                Name = breathWeaponData.name ?? string.Empty,
+                Description = breathWeaponData.desc ?? string.Empty,
                 AreaOfEffect = new AreaOfEffect
                 {
                     Size = breathWeaponData.area_of_effect?.size ?? 0,
-                    Type = breathWeaponData.area_of_effect?.type
+                    Type = breathWeaponData.area_of_effect?.type ?? string.Empty
                 },
                 Usage = new Usage
                 {
-                    Type = breathWeaponData.usage?.type,
+                    Type = breathWeaponData.usage?.type ?? string.Empty,
                     Times = breathWeaponData.usage?.times ?? 0
                 },
                 Dc = new DifficultyClass
                 {
                     DcType = new AbilityScoreReference
                     {
-                        Index = breathWeaponData.dc?.dc_type?.index,
-                        Name = breathWeaponData.dc?.dc_type?.name,
-                        Url = breathWeaponData.dc?.dc_type?.url
+                        Index = breathWeaponData.dc?.dc_type?.index ?? string.Empty,
+                        Name = breathWeaponData.dc?.dc_type?.name ?? string.Empty,
+                        Url = breathWeaponData.dc?.dc_type?.url ?? string.Empty
                     },
-                    SuccessType = breathWeaponData.dc?.success_type
+                    SuccessType = breathWeaponData.dc?.success_type ?? string.Empty
                 },
                 Damage = damage
             };
         }
 
-        private ParentTrait ConvertToParentTrait(dynamic parentData)
+        private ParentTrait? ConvertToParentTrait(dynamic parentData)
         {
             if (parentData == null) return null;
 
             return new ParentTrait
             {
-                Index = parentData.index,
-                Name = parentData.name,
-                Url = parentData.url
+                Index = parentData.index ?? string.Empty,
+                Name = parentData.name ?? string.Empty,
+                Url = parentData.url ?? string.Empty
             };
         }
 

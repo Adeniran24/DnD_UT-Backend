@@ -10,13 +10,13 @@ namespace GameApi.Controllers
     // Model representing a weapon property
     public class WeaponProperty
     {
-        public string Index { get; set; }
-        public string Name { get; set; }
+        public string Index { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("desc")] // Map JSON "desc" to Description
-        public List<string> Description { get; set; }
+        public List<string> Description { get; set; } = new();
 
-        public string Url { get; set; }
+        public string Url { get; set; } = string.Empty;
     }
 
     [ApiController]
@@ -24,14 +24,14 @@ namespace GameApi.Controllers
     public class WeaponPropertiesController : ControllerBase
     {
         private readonly string _jsonFilePath;
-        private List<WeaponProperty> _cachedWeaponProperties;
+        private List<WeaponProperty>? _cachedWeaponProperties;
 
         public WeaponPropertiesController(IWebHostEnvironment env)
         {
             _jsonFilePath = Path.Combine(env.ContentRootPath, "Database", "2014", "5e-SRD-Weapon-Properties.json");
         }
 
-        private async Task<List<WeaponProperty>> LoadWeaponPropertiesAsync()
+        private async Task<List<WeaponProperty>?> LoadWeaponPropertiesAsync()
         {
             if (_cachedWeaponProperties != null)
                 return _cachedWeaponProperties;
@@ -43,7 +43,7 @@ namespace GameApi.Controllers
             _cachedWeaponProperties = JsonSerializer.Deserialize<List<WeaponProperty>>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
-            });
+            }) ?? new List<WeaponProperty>();
 
             foreach (var wp in _cachedWeaponProperties)
             {

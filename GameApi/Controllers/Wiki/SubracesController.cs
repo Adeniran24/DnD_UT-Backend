@@ -9,7 +9,7 @@ namespace DndSubraces.Controllers
     [Route("api/[controller]")]
     public class SubracesController : ControllerBase
     {
-        private static List<Subrace> _subraces;
+        private static List<Subrace> _subraces = new();
 
         public SubracesController()
         {
@@ -56,40 +56,40 @@ namespace DndSubraces.Controllers
         // Models
         public class Subrace
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public RaceInfo Race { get; set; }
-            public string Description { get; set; }
-            public List<AbilityBonus> AbilityBonuses { get; set; }
-            public List<RacialTrait> RacialTraits { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public RaceInfo Race { get; set; } = new();
+            public string Description { get; set; } = string.Empty;
+            public List<AbilityBonus> AbilityBonuses { get; set; } = new();
+            public List<RacialTrait> RacialTraits { get; set; } = new();
+            public string Url { get; set; } = string.Empty;
         }
 
         public class RaceInfo
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class AbilityBonus
         {
-            public AbilityScore AbilityScore { get; set; }
+            public AbilityScore AbilityScore { get; set; } = new();
             public int Bonus { get; set; }
         }
 
         public class AbilityScore
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         public class RacialTrait
         {
-            public string Index { get; set; }
-            public string Name { get; set; }
-            public string Url { get; set; }
+            public string Index { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
         }
 
         // Converter methods

@@ -15,7 +15,7 @@ namespace GameApi.DTOs.DND2014
         public List<BackgroundReference> StartingProficiencies { get; set; } = new();
 
         [JsonPropertyName("language_options")]
-        public BackgroundOptionSet LanguageOptions { get; set; }
+        public BackgroundOptionSet LanguageOptions { get; set; } = new();
 
         [JsonPropertyName("starting_equipment")]
         public List<BackgroundEquipmentItem> StartingEquipment { get; set; } = new();
@@ -24,19 +24,19 @@ namespace GameApi.DTOs.DND2014
         public List<BackgroundEquipmentOption> StartingEquipmentOptions { get; set; } = new();
 
         [JsonPropertyName("feature")]
-        public BackgroundFeature Feature { get; set; }
+        public BackgroundFeature Feature { get; set; } = new();
 
         [JsonPropertyName("personality_traits")]
-        public BackgroundChoiceSet PersonalityTraits { get; set; }
+        public BackgroundChoiceSet PersonalityTraits { get; set; } = new();
 
         [JsonPropertyName("ideals")]
-        public BackgroundChoiceSet Ideals { get; set; }
+        public BackgroundChoiceSet Ideals { get; set; } = new();
 
         [JsonPropertyName("bonds")]
-        public BackgroundChoiceSet Bonds { get; set; }
+        public BackgroundChoiceSet Bonds { get; set; } = new();
 
         [JsonPropertyName("flaws")]
-        public BackgroundChoiceSet Flaws { get; set; }
+        public BackgroundChoiceSet Flaws { get; set; } = new();
 
         [JsonPropertyName("url")]
         public string Url { get; set; } = string.Empty;

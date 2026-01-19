@@ -10,7 +10,7 @@ namespace GameApi.Models
 
         public int SenderId { get; set; }
         [ForeignKey("SenderId")]
-        public User Sender { get; set; }
+        public User Sender { get; set; } = null!;
 
         public int? ChatRoomId { get; set; } // null = privát üzenet
         public ChatRoom? ChatRoom { get; set; }
