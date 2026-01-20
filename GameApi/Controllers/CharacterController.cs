@@ -45,6 +45,12 @@ namespace GameApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] GameApi.Models.Character character)
         {
+            if (character == null)
+            {
+                return BadRequest("Character payload is required.");
+            }
+
+            character.id = 0;
             character.created_at = DateTime.UtcNow;
             character.updated_at = DateTime.UtcNow;
 
@@ -60,11 +66,19 @@ namespace GameApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] GameApi.Models.Character updated)
         {
+            if (updated == null)
+            {
+                return BadRequest("Character payload is required.");
+            }
+
             var existing = await _context.Characters.FindAsync(id);
             if (existing == null) return NotFound();
 
+            updated.id = existing.id;
+            updated.created_at = existing.created_at;
+            updated.updated_at = DateTime.UtcNow;
+
             _context.Entry(existing).CurrentValues.SetValues(updated);
-            existing.updated_at = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return Ok(existing);
