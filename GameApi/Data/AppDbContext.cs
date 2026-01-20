@@ -50,6 +50,12 @@ namespace GameApi.Data
         public DbSet<DNDPrerequisite> DNDPrerequisites { get; set; }
         public DbSet<DirectMessage> DirectMessages { get; set; }
         public DbSet<Character> Characters { get; set; }
+        public DbSet<VttSession> VttSessions { get; set; }
+        public DbSet<VttSessionMember> VttSessionMembers { get; set; }
+        public DbSet<VttMap> VttMaps { get; set; }
+        public DbSet<VttToken> VttTokens { get; set; }
+        public DbSet<VttChatMessage> VttChatMessages { get; set; }
+        public DbSet<VttAsset> VttAssets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -254,12 +260,81 @@ modelBuilder.Entity<Character>()
     .HasForeignKey(dm => dm.SenderId)
     .OnDelete(DeleteBehavior.Restrict);
 
-modelBuilder.Entity<DirectMessage>()
+            modelBuilder.Entity<DirectMessage>()
     .HasOne(dm => dm.Receiver)
     .WithMany()
     .HasForeignKey(dm => dm.ReceiverId)
     .OnDelete(DeleteBehavior.Restrict);
 
+
+            modelBuilder.Entity<VttSession>()
+                .HasOne(v => v.Owner)
+                .WithMany()
+                .HasForeignKey(v => v.OwnerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<VttSessionMember>()
+                .HasKey(m => new { m.SessionId, m.UserId });
+
+            modelBuilder.Entity<VttSessionMember>()
+                .HasOne(m => m.Session)
+                .WithMany(s => s.Members)
+                .HasForeignKey(m => m.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VttSessionMember>()
+                .HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VttMap>()
+                .HasOne(m => m.Session)
+                .WithMany(s => s.Maps)
+                .HasForeignKey(m => m.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VttToken>()
+                .HasOne(t => t.Session)
+                .WithMany(s => s.Tokens)
+                .HasForeignKey(t => t.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VttToken>()
+                .HasOne(t => t.Owner)
+                .WithMany()
+                .HasForeignKey(t => t.OwnerUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<VttToken>()
+                .HasOne(t => t.Character)
+                .WithMany()
+                .HasForeignKey(t => t.CharacterId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<VttChatMessage>()
+                .HasOne(m => m.Session)
+                .WithMany(s => s.ChatMessages)
+                .HasForeignKey(m => m.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VttChatMessage>()
+                .HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<VttAsset>()
+                .HasOne(a => a.Session)
+                .WithMany(s => s.Assets)
+                .HasForeignKey(a => a.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VttAsset>()
+                .HasOne(a => a.UploadedBy)
+                .WithMany()
+                .HasForeignKey(a => a.UploadedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             
         }

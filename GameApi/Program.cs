@@ -143,7 +143,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     (path.StartsWithSegments("/hubs/chat") ||
                      path.StartsWithSegments("/hubs/dm") ||
                      path.StartsWithSegments("/hubs/community") ||
-                     path.StartsWithSegments("/hubs/voice")))
+                     path.StartsWithSegments("/hubs/voice") ||
+                     path.StartsWithSegments("/hubs/vtt")))
                 {
                     context.Token = accessToken;
                 }
@@ -239,5 +240,6 @@ app.MapControllers().RequireCors("CorsPolicy");
 app.MapHub<DirectMessageHub>("/hubs/dm").RequireCors("CorsPolicy");
 app.MapHub<CommunityHub>("/hubs/community").RequireCors("CorsPolicy");
 app.MapHub<VoiceHub>("/hubs/voice").RequireCors("CorsPolicy");
+app.MapHub<VttHub>("/hubs/vtt").RequireCors("CorsPolicy");
 
 app.Run();
