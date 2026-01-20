@@ -17,8 +17,24 @@ namespace GameApi.Hubs
             _context = context;
         }
 
-        private int Me =>
-            int.Parse(Context.User!.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        private int Me
+        {
+            get
+            {
+                var idStr =
+                    Context.User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                    Context.User?.FindFirstValue("id") ??
+                    Context.User?.FindFirstValue("userId") ??
+                    Context.User?.FindFirstValue("sub");
+
+                if (!int.TryParse(idStr, out var userId))
+                {
+                    throw new HubException("Missing/invalid user id claim in JWT.");
+                }
+
+                return userId;
+            }
+        }
 
         public async Task SendDm(int friendUserId, string content)
         {

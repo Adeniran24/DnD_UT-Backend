@@ -160,9 +160,14 @@ builder.Services.AddCors(options =>
     options.AddPolicy("CorsPolicy", policy =>
     {
         policy
-            .AllowAnyOrigin()
+            .WithOrigins(
+                "https://dnd-tool.com",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000"
+            )
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -230,9 +235,9 @@ app.UseSwaggerUI(c =>
 // ======================================================
 // ENDPOINTS
 // ======================================================
-app.MapControllers();
-app.MapHub<DirectMessageHub>("/hubs/dm");
-app.MapHub<CommunityHub>("/hubs/community");
-app.MapHub<VoiceHub>("/hubs/voice");
+app.MapControllers().RequireCors("CorsPolicy");
+app.MapHub<DirectMessageHub>("/hubs/dm").RequireCors("CorsPolicy");
+app.MapHub<CommunityHub>("/hubs/community").RequireCors("CorsPolicy");
+app.MapHub<VoiceHub>("/hubs/voice").RequireCors("CorsPolicy");
 
 app.Run();

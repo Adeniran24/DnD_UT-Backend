@@ -12,6 +12,17 @@ namespace GameApi.Controllers
     [Authorize]
     public class DirectMessageController : ControllerBase
     {
+
+        private bool TryGetUserId(out int userId)
+        {
+            var idStr =
+                User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                User.FindFirstValue("id") ??
+                User.FindFirstValue("userId") ??
+                User.FindFirstValue("sub");
+
+            return int.TryParse(idStr, out userId);
+        }
         private readonly AppDbContext _context;
 
         public DirectMessageController(AppDbContext context)
@@ -22,7 +33,10 @@ namespace GameApi.Controllers
         [HttpGet("with/{friendId}")]
         public async Task<IActionResult> GetHistory(int friendId)
         {
-            int me = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (!TryGetUserId(out var me))
+            {
+                return Unauthorized();
+            }
 
             bool areFriends = await _context.Friendships.AnyAsync(f =>
                 f.Status == FriendshipStatus.Accepted &&
