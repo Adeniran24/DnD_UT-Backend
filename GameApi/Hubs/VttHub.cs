@@ -155,6 +155,30 @@ namespace GameApi.Hubs
             });
         }
 
+        public async Task SendPing(int sessionId, PingRequest request)
+        {
+            await GetSessionRole(sessionId);
+
+            if (request == null)
+            {
+                throw new HubException("Invalid ping.");
+            }
+
+            var username = await _context.Users
+                .Where(u => u.Id == Me)
+                .Select(u => u.Username)
+                .FirstOrDefaultAsync() ?? "User";
+
+            await Clients.Group($"vtt:{sessionId}").SendAsync("ping", new
+            {
+                sessionId,
+                userId = Me,
+                username,
+                x = request.X,
+                y = request.Y
+            });
+        }
+
         public async Task CreateToken(int sessionId, CreateTokenRequest request)
         {
             var (session, role) = await GetSessionRole(sessionId);
@@ -413,6 +437,12 @@ namespace GameApi.Hubs
             public int? GridOffsetY { get; set; }
             public int? Width { get; set; }
             public int? Height { get; set; }
+        }
+
+        public sealed class PingRequest
+        {
+            public double X { get; set; }
+            public double Y { get; set; }
         }
 
         private sealed class DiceGroup
