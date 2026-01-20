@@ -25,10 +25,11 @@ namespace GameApi.Hubs
             if (string.IsNullOrWhiteSpace(content))
                 throw new HubException("Empty message");
 
-            // 🔒 FRIEND CHECK
+            // FRIEND CHECK
             bool areFriends = await _context.Friendships.AnyAsync(f =>
-                (f.RequesterId == Me && f.AddresseeId == friendUserId) ||
-                (f.RequesterId == friendUserId && f.AddresseeId == Me)
+                f.Status == FriendshipStatus.Accepted &&
+                ((f.RequesterId == Me && f.AddresseeId == friendUserId) ||
+                 (f.RequesterId == friendUserId && f.AddresseeId == Me))
             );
 
             if (!areFriends)
@@ -45,7 +46,11 @@ namespace GameApi.Hubs
             _context.DirectMessages.Add(msg);
             await _context.SaveChangesAsync();
 
-            // 🔥 push mindkét félnek
+            var senderUsername = await _context.Users
+                .Where(u => u.Id == Me)
+                .Select(u => u.Username)
+                .FirstOrDefaultAsync() ?? "Unknown";
+
             await Clients.Users(
                 Me.ToString(),
                 friendUserId.ToString()
@@ -54,7 +59,8 @@ namespace GameApi.Hubs
                 senderId = Me,
                 receiverId = friendUserId,
                 content = msg.Content,
-                sentAt = msg.SentAt
+                sentAt = msg.SentAt,
+                senderUsername
             });
         }
     }

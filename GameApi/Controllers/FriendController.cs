@@ -32,11 +32,16 @@ namespace GameApi.Controllers
                 .Include(f => f.Addressee)
                 .ToListAsync();
 
-            var friendDtos = friends.Select(f => new FriendDto
+            var friendDtos = friends.Select(f =>
             {
-                Id = f.Id,
-                Username = f.RequesterId == userId ? f.Addressee!.Username : f.Requester!.Username,
-                Status = f.Status.ToString()
+                var friendUser = f.RequesterId == userId ? f.Addressee : f.Requester;
+                return new FriendDto
+                {
+                    Id = friendUser?.Id ?? 0,
+                    Username = friendUser?.Username ?? string.Empty,
+                    Status = f.Status.ToString(),
+                    ProfilePictureUrl = friendUser?.ProfilePictureUrl
+                };
             }).ToList();
 
             return Ok(friendDtos);
@@ -56,7 +61,8 @@ namespace GameApi.Controllers
             {
                 Id = u.Id,
                 Username = u.Username,
-                Status = "None"
+                Status = "None",
+                ProfilePictureUrl = u.ProfilePictureUrl
             }).ToList();
 
             return Ok(dtos);
