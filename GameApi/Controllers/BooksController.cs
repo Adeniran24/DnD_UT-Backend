@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GameApi.Data;
 using GameApi.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GameApi.Controllers
@@ -27,13 +29,62 @@ namespace GameApi.Controllers
             return await _context.Books.ToListAsync();
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<Book>> GetBook(int id)
         {
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
 
             return book;
+        }
+
+        [HttpGet("markdown")]
+        public ActionResult<IEnumerable<BookMarkdownInfoDto>> GetMarkdownBooks()
+        {
+            var booksPath = Path.Combine(_env.ContentRootPath, "Books");
+            if (!Directory.Exists(booksPath))
+            {
+                return Ok(new List<BookMarkdownInfoDto>());
+            }
+
+            var entries = Directory.EnumerateFiles(booksPath, "*.md")
+                .Select(path => new FileInfo(path))
+                .OrderBy(file => file.Name)
+                .Select(file => new BookMarkdownInfoDto
+                {
+                    FileName = file.Name,
+                    Title = Path.GetFileNameWithoutExtension(file.Name),
+                    LastModifiedUtc = file.LastWriteTimeUtc
+                })
+                .ToList();
+
+            return Ok(entries);
+        }
+
+        [HttpGet("markdown/{fileName}")]
+        public async Task<ActionResult> GetMarkdownBook(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return BadRequest("File name is required.");
+            }
+
+            var safeName = Path.GetFileName(fileName);
+            if (!safeName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Only .md files are supported.");
+            }
+
+            var booksPath = Path.Combine(_env.ContentRootPath, "Books");
+            var fullPath = Path.Combine(booksPath, safeName);
+
+            if (!System.IO.File.Exists(fullPath))
+            {
+                return NotFound();
+            }
+
+            var content = await System.IO.File.ReadAllTextAsync(fullPath);
+            return Content(content, "text/markdown");
         }
 
         [HttpPost]
@@ -76,7 +127,7 @@ namespace GameApi.Controllers
             return CreatedAtAction(nameof(GetBook), new { id = book.Id }, book);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteBook(int id)
         {
             var book = await _context.Books.FindAsync(id);
@@ -95,5 +146,12 @@ namespace GameApi.Controllers
         public string Title { get; set; } = string.Empty;
         public IFormFile CoverImage { get; set; } = null!;
         public IFormFile File { get; set; } = null!;
+    }
+
+    public class BookMarkdownInfoDto
+    {
+        public string FileName { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public DateTime LastModifiedUtc { get; set; }
     }
 }
