@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 //
 namespace GameApi.Controllers
 {
@@ -12,6 +13,24 @@ namespace GameApi.Controllers
     [Authorize]
     public class CharactersController : ControllerBase
     {
+
+        private static string NormalizeJson(string? value, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return fallback;
+            }
+
+            try
+            {
+                using var _ = JsonDocument.Parse(value);
+                return value;
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
         private readonly AppDbContext _context;
 
         public CharactersController(AppDbContext context)
@@ -51,6 +70,10 @@ namespace GameApi.Controllers
             }
 
             character.id = 0;
+            character.equipment = NormalizeJson(character.equipment, "{}");
+            character.attacks = NormalizeJson(character.attacks, "[]");
+            character.spellbook = NormalizeJson(character.spellbook, "[]");
+            character.featuresFeats = NormalizeJson(character.featuresFeats, "[]");
             character.created_at = DateTime.UtcNow;
             character.updated_at = DateTime.UtcNow;
 
@@ -76,6 +99,10 @@ namespace GameApi.Controllers
 
             updated.id = existing.id;
             updated.created_at = existing.created_at;
+            updated.equipment = NormalizeJson(updated.equipment, "{}");
+            updated.attacks = NormalizeJson(updated.attacks, "[]");
+            updated.spellbook = NormalizeJson(updated.spellbook, "[]");
+            updated.featuresFeats = NormalizeJson(updated.featuresFeats, "[]");
             updated.updated_at = DateTime.UtcNow;
 
             _context.Entry(existing).CurrentValues.SetValues(updated);
