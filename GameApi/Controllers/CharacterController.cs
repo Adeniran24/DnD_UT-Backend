@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 //
 namespace GameApi.Controllers
 {
@@ -32,6 +34,7 @@ namespace GameApi.Controllers
             }
         }
         private readonly AppDbContext _context;
+        private int Me => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         public CharactersController(AppDbContext context)
         {
@@ -44,7 +47,12 @@ namespace GameApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            return Ok(await _context.Characters.ToListAsync());
+            var userId = Me;
+            var characters = await _context.Characters
+                .Where(c => c.userId == userId)
+                .ToListAsync();
+
+            return Ok(characters);
         }
 
         // =========================
@@ -53,7 +61,10 @@ namespace GameApi.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var character = await _context.Characters.FindAsync(id);
+            var userId = Me;
+            var character = await _context.Characters
+                .FirstOrDefaultAsync(c => c.id == id && c.userId == userId);
+
             if (character == null) return NotFound();
             return Ok(character);
         }
@@ -69,7 +80,9 @@ namespace GameApi.Controllers
                 return BadRequest("Character payload is required.");
             }
 
+            var userId = Me;
             character.id = 0;
+            character.userId = userId;
             character.equipment = NormalizeJson(character.equipment, "{}");
             character.attacks = NormalizeJson(character.attacks, "[]");
             character.spellbook = NormalizeJson(character.spellbook, "[]");
@@ -94,10 +107,14 @@ namespace GameApi.Controllers
                 return BadRequest("Character payload is required.");
             }
 
-            var existing = await _context.Characters.FindAsync(id);
+            var userId = Me;
+            var existing = await _context.Characters
+                .FirstOrDefaultAsync(c => c.id == id && c.userId == userId);
+
             if (existing == null) return NotFound();
 
             updated.id = existing.id;
+            updated.userId = existing.userId;
             updated.created_at = existing.created_at;
             updated.equipment = NormalizeJson(updated.equipment, "{}");
             updated.attacks = NormalizeJson(updated.attacks, "[]");
@@ -117,7 +134,10 @@ namespace GameApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var character = await _context.Characters.FindAsync(id);
+            var userId = Me;
+            var character = await _context.Characters
+                .FirstOrDefaultAsync(c => c.id == id && c.userId == userId);
+
             if (character == null) return NotFound();
 
             _context.Characters.Remove(character);
@@ -139,6 +159,12 @@ namespace GameApi.Models
     {
         [Key]
         public int id { get; set; }
+
+        public int? userId { get; set; }
+
+        [JsonIgnore]
+        [ForeignKey(nameof(userId))]
+        public User? User { get; set; }
 
         public string characterName { get; set; } = "";
         public string classLevel { get; set; } = "";
