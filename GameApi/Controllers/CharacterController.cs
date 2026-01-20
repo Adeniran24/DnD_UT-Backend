@@ -1,4 +1,5 @@
 using GameApi.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
@@ -8,6 +9,7 @@ namespace GameApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class CharactersController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -198,3 +200,5 @@ namespace GameApi.Models
         public DateTime updated_at { get; set; }
     }
 }
+
+
