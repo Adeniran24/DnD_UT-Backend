@@ -16,6 +16,7 @@ namespace GameApi.Models
 
     public string? ProfilePictureUrl { get; set; } // pl: "/uploads/profile/abc.jpg"
     public string? ProfileThemeJson { get; set; }
+    public bool HasCompletedTutorial { get; set; }
 
 
     // 🔐 ADMIN DASHBOARDHOZ

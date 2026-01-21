@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.FileProviders;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -218,6 +220,42 @@ catch (Exception ex)
 // ======================================================
 app.UseForwardedHeaders();
 app.UseStaticFiles();
+// Serve 5eTools book images from the repo-level images folder when available.
+var webRoot = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+var bookImageRoot = string.Empty;
+var bookImageCandidates = new[]
+{
+    Path.Combine(app.Environment.ContentRootPath, "images", "5eTools-master", "5eTools-master", "img"),
+    Path.Combine(app.Environment.ContentRootPath, "..", "..", "images", "5eTools-master", "5eTools-master", "img"),
+    Path.Combine(webRoot, "img")
+};
+
+foreach (var candidate in bookImageCandidates)
+{
+    var fullPath = Path.GetFullPath(candidate);
+    if (!Directory.Exists(fullPath)) continue;
+    bookImageRoot = fullPath;
+    break;
+}
+
+if (!string.IsNullOrWhiteSpace(bookImageRoot))
+{
+    var contentTypeProvider = new FileExtensionContentTypeProvider();
+    contentTypeProvider.Mappings[".webp"] = "image/webp";
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(bookImageRoot),
+        RequestPath = "/img",
+        ContentTypeProvider = contentTypeProvider
+    });
+
+    Console.WriteLine($"Book image directory served: {bookImageRoot}");
+}
+else
+{
+    Console.WriteLine("WARNING: Book image directory not found for markdown images.");
+}
 app.UseRouting();
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
