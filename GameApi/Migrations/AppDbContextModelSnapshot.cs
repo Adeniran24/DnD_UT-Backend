@@ -365,6 +365,60 @@ namespace DndApi.Migrations
                     b.Property<bool>("skillProf_survival")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<bool>("skillExp_acrobatics")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_animalHandling")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_arcana")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_athletics")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_deception")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_history")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_insight")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_intimidation")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_investigation")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_medicine")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_nature")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_perception")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_performance")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_persuasion")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_religion")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_sleightOfHand")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_stealth")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillExp_survival")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("skin")
                         .IsRequired()
                         .HasColumnType("longtext");

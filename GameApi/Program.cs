@@ -225,6 +225,7 @@ var webRoot = app.Environment.WebRootPath ?? Path.Combine(app.Environment.Conten
 var bookImageRoot = string.Empty;
 var bookImageCandidates = new[]
 {
+    Path.Combine(app.Environment.ContentRootPath, "Books", "img"),
     Path.Combine(app.Environment.ContentRootPath, "images", "5eTools-master", "5eTools-master", "img"),
     Path.Combine(app.Environment.ContentRootPath, "..", "..", "images", "5eTools-master", "5eTools-master", "img"),
     Path.Combine(webRoot, "img")

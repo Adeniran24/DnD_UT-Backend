@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace GameApi.Controllers
@@ -17,7 +18,10 @@ namespace GameApi.Controllers
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
 
-        public BooksController(AppDbContext context, IWebHostEnvironment env)
+    private static readonly Regex CoverImageRegex =
+        new(@"!\[[^\]]*cover[^\]]*\]\(([^)]+)\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    public BooksController(AppDbContext context, IWebHostEnvironment env)
         {
             _context = context;
             _env = env;
@@ -54,11 +58,30 @@ namespace GameApi.Controllers
                 {
                     FileName = file.Name,
                     Title = Path.GetFileNameWithoutExtension(file.Name),
-                    LastModifiedUtc = file.LastWriteTimeUtc
+                    LastModifiedUtc = file.LastWriteTimeUtc,
+                    CoverImagePath = ExtractCoverImagePath(file)
                 })
                 .ToList();
 
             return Ok(entries);
+        }
+
+        private static string? ExtractCoverImagePath(FileInfo file)
+        {
+            foreach (var line in System.IO.File.ReadLines(file.FullName))
+            {
+                var match = CoverImageRegex.Match(line);
+                if (match.Success)
+                {
+                    var path = match.Groups[1].Value?.Trim();
+                    if (!string.IsNullOrWhiteSpace(path))
+                    {
+                        return path;
+                    }
+                }
+            }
+
+            return null;
         }
 
         [HttpGet("markdown/{fileName}")]
@@ -153,5 +176,6 @@ namespace GameApi.Controllers
         public string FileName { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public DateTime LastModifiedUtc { get; set; }
+        public string? CoverImagePath { get; set; }
     }
 }
