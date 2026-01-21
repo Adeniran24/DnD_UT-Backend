@@ -941,6 +941,10 @@ namespace DndApi.Migrations
                     b.Property<string>("ProfileThemeJson")
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("HasCompletedTutorial")
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("longtext");

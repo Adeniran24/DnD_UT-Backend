@@ -123,7 +123,9 @@ namespace GameApi.Controllers
                     u.CreatedAt,
                     u.LastLoginAt,
                     u.ProfilePictureUrl,
-                    u.ProfileThemeJson
+
+                    u.ProfileThemeJson,
+                    u.HasCompletedTutorial
 
                 })
                 .FirstOrDefaultAsync();
@@ -193,6 +195,29 @@ namespace GameApi.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { theme = dto.Theme.ValueKind == JsonValueKind.Undefined ? (object?)null : dto.Theme });
+        }
+
+        public class TutorialStatusUpdateDto
+        {
+            public bool Completed { get; set; } = true;
+        }
+
+        [HttpPut("me/tutorial")]
+        [Authorize]
+        public async Task<IActionResult> UpdateTutorialStatus([FromBody] TutorialStatusUpdateDto dto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            user.HasCompletedTutorial = dto.Completed;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { hasCompletedTutorial = user.HasCompletedTutorial });
         }
 
         public class UpdateProfileDto
