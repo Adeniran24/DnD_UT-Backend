@@ -194,65 +194,176 @@ namespace GameApi.Controllers
 
             return Ok(new { theme = dto.Theme.ValueKind == JsonValueKind.Undefined ? (object?)null : dto.Theme });
         }
-[HttpPut("me/profile-picture")]
-[Authorize]
-[Consumes("multipart/form-data")]
-[RequestSizeLimit(5 * 1024 * 1024)] // 5MB
-public async Task<IActionResult> UpdateProfilePicture([FromForm] GameApi.Models.ProfilePictureUploadDto dto)
-{
-    var file = dto.File;
-    if (file == null || file.Length == 0)
-        return BadRequest("No file uploaded.");
 
-    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    if (!int.TryParse(userIdClaim, out var userId))
-        return Unauthorized();
-
-    var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-    if (user == null)
-        return NotFound("User not found.");
-
-    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-    var allowedExt = new HashSet<string> { ".jpg", ".jpeg", ".png", ".webp" };
-    if (!allowedExt.Contains(ext))
-        return BadRequest("Invalid file type.");
-
-    var allowedContentTypes = new HashSet<string> { "image/jpeg", "image/png", "image/webp" };
-    if (!allowedContentTypes.Contains(file.ContentType))
-        return BadRequest("Invalid content type.");
-
-    var webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
-    var uploadDir = Path.Combine(webRoot, "uploads", "profile");
-    Directory.CreateDirectory(uploadDir);
-
-    var newFileName = $"{Guid.NewGuid():N}{ext}";
-    var newPhysicalPath = Path.Combine(uploadDir, newFileName);
-
-    var oldUrl = user.ProfilePictureUrl;
-
-    await using (var stream = System.IO.File.Create(newPhysicalPath))
-    {
-        await file.CopyToAsync(stream);
-    }
-
-    var newUrl = $"/uploads/profile/{newFileName}";
-    user.ProfilePictureUrl = newUrl;
-    await _context.SaveChangesAsync();
-
-    if (!string.IsNullOrWhiteSpace(oldUrl) &&
-        oldUrl.StartsWith("/uploads/profile/", StringComparison.OrdinalIgnoreCase))
-    {
-        var oldFileName = Path.GetFileName(oldUrl);
-        var oldPhysicalPath = Path.Combine(uploadDir, oldFileName);
-
-        if (System.IO.File.Exists(oldPhysicalPath))
+        public class UpdateProfileDto
         {
-            try { System.IO.File.Delete(oldPhysicalPath); } catch { }
+            public string? Username { get; set; }
+            public string? Email { get; set; }
+            public string? CurrentPassword { get; set; }
+            public string? NewPassword { get; set; }
         }
-    }
 
-    return Ok(new { profilePictureUrl = newUrl });
-}
+        public class ProfilePictureUpdateDto
+        {
+            public string? ProfilePicture { get; set; }
+        }
+
+        [HttpPut("me")]
+        [Authorize]
+        public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileDto dto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            var nextUsername = dto.Username?.Trim();
+            var nextEmail = dto.Email?.Trim();
+
+            var wantsUsername = !string.IsNullOrWhiteSpace(nextUsername) && nextUsername != user.Username;
+            var wantsEmail = !string.IsNullOrWhiteSpace(nextEmail) && nextEmail != user.Email;
+            var wantsPassword = !string.IsNullOrWhiteSpace(dto.NewPassword);
+
+            if (!wantsUsername && !wantsEmail && !wantsPassword)
+                return BadRequest("No changes.");
+
+            if (wantsEmail || wantsPassword)
+            {
+                if (string.IsNullOrWhiteSpace(dto.CurrentPassword))
+                    return BadRequest("Current password is required.");
+
+                var currentHash = ComputeHash(dto.CurrentPassword);
+                if (currentHash != user.PasswordHash)
+                    return Unauthorized("Invalid password.");
+            }
+
+            if (wantsEmail)
+            {
+                var emailExists = await _context.Users.AnyAsync(u => u.Email == nextEmail && u.Id != userId);
+                if (emailExists)
+                    return BadRequest("Email already registered.");
+                user.Email = nextEmail!;
+            }
+
+            if (wantsUsername)
+            {
+                var usernameExists = await _context.Users.AnyAsync(u => u.Username == nextUsername && u.Id != userId);
+                if (usernameExists)
+                    return BadRequest("Username already taken.");
+                user.Username = nextUsername!;
+            }
+
+            if (wantsPassword)
+            {
+                user.PasswordHash = ComputeHash(dto.NewPassword!);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                user.Id,
+                user.Email,
+                user.Username,
+                user.Role,
+                user.IsActive,
+                user.CreatedAt,
+                user.LastLoginAt,
+                user.ProfilePictureUrl,
+                user.ProfileThemeJson
+            });
+        }
+
+        [HttpPut("me/profile-picture")]
+        [Authorize]
+        [Consumes("application/json")]
+        public async Task<IActionResult> UpdateProfilePictureUrl([FromBody] ProfilePictureUpdateDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.ProfilePicture))
+                return BadRequest("Profile picture is required.");
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            var next = dto.ProfilePicture.Trim();
+            if (!next.StartsWith("/defaults/", StringComparison.OrdinalIgnoreCase) &&
+                !next.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Invalid profile picture.");
+            }
+
+            user.ProfilePictureUrl = next;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { profilePictureUrl = next });
+        }
+        [HttpPut("me/profile-picture")]
+        [Authorize]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(5 * 1024 * 1024)] // 5MB
+        public async Task<IActionResult> UpdateProfilePicture([FromForm] GameApi.Models.ProfilePictureUploadDto dto)
+        {
+            var file = dto.File;
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var allowedExt = new HashSet<string> { ".jpg", ".jpeg", ".png", ".webp" };
+            if (!allowedExt.Contains(ext))
+                return BadRequest("Invalid file type.");
+
+            var allowedContentTypes = new HashSet<string> { "image/jpeg", "image/png", "image/webp" };
+            if (!allowedContentTypes.Contains(file.ContentType))
+                return BadRequest("Invalid content type.");
+
+            var webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+            var uploadDir = Path.Combine(webRoot, "uploads", "profile");
+            Directory.CreateDirectory(uploadDir);
+
+            var newFileName = $"{Guid.NewGuid():N}{ext}";
+            var newPhysicalPath = Path.Combine(uploadDir, newFileName);
+
+            var oldUrl = user.ProfilePictureUrl;
+
+            await using (var stream = System.IO.File.Create(newPhysicalPath))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var newUrl = $"/uploads/profile/{newFileName}";
+            user.ProfilePictureUrl = newUrl;
+            await _context.SaveChangesAsync();
+
+            if (!string.IsNullOrWhiteSpace(oldUrl) &&
+                oldUrl.StartsWith("/uploads/profile/", StringComparison.OrdinalIgnoreCase))
+            {
+                var oldFileName = Path.GetFileName(oldUrl);
+                var oldPhysicalPath = Path.Combine(uploadDir, oldFileName);
+
+                if (System.IO.File.Exists(oldPhysicalPath))
+                {
+                    try { System.IO.File.Delete(oldPhysicalPath); } catch { }
+                }
+            }
+
+            return Ok(new { profilePictureUrl = newUrl });
+        }
 
 
         // ----------------------------------------------------------
