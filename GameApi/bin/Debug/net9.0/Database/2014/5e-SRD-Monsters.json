@@ -203,8 +203,8 @@
         ]
       }
     ],
-    "image": "/images/monsters/aboleth.png",
-    "url": "/api/2014/monsters/aboleth"
+    "image": "./assets/img/monster/images/aboleth.png",
+    "url": "/api/2014/monster/aboleth"
   },
   {
     "index": "acolyte",

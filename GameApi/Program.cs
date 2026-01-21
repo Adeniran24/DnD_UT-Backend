@@ -226,10 +226,17 @@ app.UseAuthorization();
 // ======================================================
 // Swagger
 // ======================================================
-app.UseSwagger();
+app.UseSwagger(c =>
+{
+    c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
+    {
+        var serverUrl = $"{httpReq.Scheme}://{httpReq.Host.Value}{httpReq.PathBase}";
+        swaggerDoc.Servers = new List<OpenApiServer> { new() { Url = serverUrl } };
+    });
+});
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "GameApi v1");
+    c.SwaggerEndpoint("v1/swagger.json", "GameApi v1");
     c.RoutePrefix = "swagger";
 });
 

@@ -370,8 +370,9 @@ namespace GameApi.Controllers
         // POST /api/mapforge/campaigns/{id}/cover
         // multipart/form-data: file
         [HttpPost("campaigns/{id}/cover")]
+        [Consumes("multipart/form-data")]
         [RequestSizeLimit(MaxImageBytes)]
-        public async Task<ActionResult<object>> UploadCampaignCover(string id, [FromForm] IFormFile file)
+        public async Task<ActionResult<object>> UploadCampaignCover(string id, IFormFile file)
         {
             var userId = GetCurrentUserId();
 
@@ -526,8 +527,9 @@ namespace GameApi.Controllers
         // POST /api/mapforge/campaigns/{id}/nodes/{nodeId}/image
         // multipart/form-data: file
         [HttpPost("campaigns/{id}/nodes/{nodeId}/image")]
+        [Consumes("multipart/form-data")]
         [RequestSizeLimit(MaxImageBytes)]
-        public async Task<ActionResult<object>> UploadNodeImage(string id, string nodeId, [FromForm] IFormFile file)
+        public async Task<ActionResult<object>> UploadNodeImage(string id, string nodeId, IFormFile file)
         {
             var userId = GetCurrentUserId();
 
