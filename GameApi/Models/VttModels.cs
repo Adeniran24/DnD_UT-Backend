@@ -19,6 +19,8 @@ namespace GameApi.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public int InitiativeRound { get; set; } = 1;
+        public int? InitiativeActiveEntryId { get; set; }
 
         [JsonIgnore]
         public List<VttSessionMember> Members { get; set; } = new();
@@ -34,6 +36,9 @@ namespace GameApi.Models
 
         [JsonIgnore]
         public List<VttAsset> Assets { get; set; } = new();
+
+        [JsonIgnore]
+        public List<VttInitiativeEntry> InitiativeEntries { get; set; } = new();
     }
 
     public class VttSessionMember
@@ -123,6 +128,24 @@ namespace GameApi.Models
         public string Type { get; set; } = "chat"; // chat | roll | system
         public string Content { get; set; } = string.Empty;
         public string? PayloadJson { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class VttInitiativeEntry
+    {
+        public int Id { get; set; }
+        public int SessionId { get; set; }
+
+        [JsonIgnore]
+        public VttSession Session { get; set; } = null!;
+
+        public int? TokenId { get; set; }
+
+        [JsonIgnore]
+        public VttToken? Token { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+        public int Value { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 

@@ -56,6 +56,7 @@ namespace GameApi.Data
         public DbSet<VttToken> VttTokens { get; set; }
         public DbSet<VttChatMessage> VttChatMessages { get; set; }
         public DbSet<VttAsset> VttAssets { get; set; }
+        public DbSet<VttInitiativeEntry> VttInitiativeEntries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -323,6 +324,18 @@ modelBuilder.Entity<Character>()
                 .WithMany()
                 .HasForeignKey(m => m.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<VttInitiativeEntry>()
+                .HasOne(i => i.Session)
+                .WithMany(s => s.InitiativeEntries)
+                .HasForeignKey(i => i.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VttInitiativeEntry>()
+                .HasOne(i => i.Token)
+                .WithMany()
+                .HasForeignKey(i => i.TokenId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<VttAsset>()
                 .HasOne(a => a.Session)

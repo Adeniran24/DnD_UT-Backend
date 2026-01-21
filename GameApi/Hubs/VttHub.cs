@@ -62,6 +62,46 @@ namespace GameApi.Hubs
             return (session, membership.Role);
         }
 
+        private async Task<List<VttInitiativeEntry>> LoadInitiativeEntries(int sessionId)
+        {
+            return await _context.VttInitiativeEntries
+                .AsNoTracking()
+                .Where(i => i.SessionId == sessionId)
+                .OrderByDescending(i => i.Value)
+                .ThenBy(i => i.CreatedAt)
+                .ThenBy(i => i.Id)
+                .ToListAsync();
+        }
+
+        private async Task BroadcastInitiative(int sessionId, VttSession? session = null)
+        {
+            session ??= await _context.VttSessions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+            if (session == null)
+            {
+                return;
+            }
+
+            var entries = await LoadInitiativeEntries(sessionId);
+
+            await Clients.Group($"vtt:{sessionId}").SendAsync("initiativeUpdated", new
+            {
+                entries = entries.Select(i => new
+                {
+                    id = i.Id,
+                    sessionId = i.SessionId,
+                    tokenId = i.TokenId,
+                    name = i.Name,
+                    value = i.Value,
+                    createdAt = i.CreatedAt
+                }),
+                activeEntryId = session.InitiativeActiveEntryId,
+                round = session.InitiativeRound < 1 ? 1 : session.InitiativeRound
+            });
+        }
+
         public async Task JoinSession(int sessionId)
         {
             await GetSessionRole(sessionId);
@@ -397,6 +437,267 @@ namespace GameApi.Hubs
             });
         }
 
+        public async Task AddInitiativeEntry(int sessionId, AddInitiativeEntryRequest request)
+        {
+            var (session, role) = await GetSessionRole(sessionId);
+            if (role != VttRole.DM)
+            {
+                throw new HubException("DM only.");
+            }
+
+            if (request == null)
+            {
+                throw new HubException("Invalid initiative entry.");
+            }
+
+            string? name = request.Name?.Trim();
+
+            if (request.TokenId.HasValue)
+            {
+                var token = await _context.VttTokens
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.Id == request.TokenId.Value && t.SessionId == sessionId);
+
+                if (token == null)
+                {
+                    throw new HubException("Token not found.");
+                }
+
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    name = token.Name;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new HubException("Initiative name is required.");
+            }
+
+            var entry = new VttInitiativeEntry
+            {
+                SessionId = sessionId,
+                TokenId = request.TokenId,
+                Name = name,
+                Value = request.Value,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.VttInitiativeEntries.Add(entry);
+            if (session.InitiativeRound < 1)
+            {
+                session.InitiativeRound = 1;
+            }
+            session.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await BroadcastInitiative(sessionId, session);
+        }
+
+        public async Task UpdateInitiativeEntry(int sessionId, UpdateInitiativeEntryRequest request)
+        {
+            var (session, role) = await GetSessionRole(sessionId);
+            if (role != VttRole.DM)
+            {
+                throw new HubException("DM only.");
+            }
+
+            if (request == null)
+            {
+                throw new HubException("Invalid initiative entry.");
+            }
+
+            var entry = await _context.VttInitiativeEntries
+                .FirstOrDefaultAsync(i => i.Id == request.EntryId && i.SessionId == sessionId);
+
+            if (entry == null)
+            {
+                throw new HubException("Initiative entry not found.");
+            }
+
+            if (request.Name != null)
+            {
+                var trimmed = request.Name.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed))
+                {
+                    throw new HubException("Initiative name is required.");
+                }
+
+                entry.Name = trimmed;
+            }
+
+            if (request.Value.HasValue)
+            {
+                entry.Value = request.Value.Value;
+            }
+
+            if (session.InitiativeRound < 1)
+            {
+                session.InitiativeRound = 1;
+            }
+            session.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await BroadcastInitiative(sessionId, session);
+        }
+
+        public async Task RemoveInitiativeEntry(int sessionId, int entryId)
+        {
+            var (session, role) = await GetSessionRole(sessionId);
+            if (role != VttRole.DM)
+            {
+                throw new HubException("DM only.");
+            }
+
+            var entry = await _context.VttInitiativeEntries
+                .FirstOrDefaultAsync(i => i.Id == entryId && i.SessionId == sessionId);
+
+            if (entry == null)
+            {
+                throw new HubException("Initiative entry not found.");
+            }
+
+            _context.VttInitiativeEntries.Remove(entry);
+
+            if (session.InitiativeActiveEntryId == entry.Id)
+            {
+                session.InitiativeActiveEntryId = null;
+            }
+
+            if (session.InitiativeRound < 1)
+            {
+                session.InitiativeRound = 1;
+            }
+
+            session.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await BroadcastInitiative(sessionId, session);
+        }
+
+        public async Task ClearInitiative(int sessionId)
+        {
+            var (session, role) = await GetSessionRole(sessionId);
+            if (role != VttRole.DM)
+            {
+                throw new HubException("DM only.");
+            }
+
+            var entries = await _context.VttInitiativeEntries
+                .Where(i => i.SessionId == sessionId)
+                .ToListAsync();
+
+            if (entries.Count > 0)
+            {
+                _context.VttInitiativeEntries.RemoveRange(entries);
+            }
+
+            session.InitiativeActiveEntryId = null;
+            session.InitiativeRound = 1;
+            session.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await BroadcastInitiative(sessionId, session);
+        }
+
+        public async Task ResetInitiative(int sessionId)
+        {
+            var (session, role) = await GetSessionRole(sessionId);
+            if (role != VttRole.DM)
+            {
+                throw new HubException("DM only.");
+            }
+
+            session.InitiativeActiveEntryId = null;
+            session.InitiativeRound = 1;
+            session.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await BroadcastInitiative(sessionId, session);
+        }
+
+        public async Task StepInitiative(int sessionId, int direction)
+        {
+            var (session, role) = await GetSessionRole(sessionId);
+            if (role != VttRole.DM)
+            {
+                throw new HubException("DM only.");
+            }
+
+            var entries = await LoadInitiativeEntries(sessionId);
+            if (entries.Count == 0)
+            {
+                session.InitiativeActiveEntryId = null;
+                session.InitiativeRound = 1;
+                session.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                await BroadcastInitiative(sessionId, session);
+                return;
+            }
+
+            var orderedIds = entries.Select(e => e.Id).ToList();
+            var currentIndex = session.InitiativeActiveEntryId.HasValue
+                ? orderedIds.IndexOf(session.InitiativeActiveEntryId.Value)
+                : -1;
+
+            if (currentIndex < 0)
+            {
+                session.InitiativeActiveEntryId = direction < 0
+                    ? orderedIds[^1]
+                    : orderedIds[0];
+
+                session.InitiativeRound = session.InitiativeRound < 1 ? 1 : session.InitiativeRound;
+            }
+            else
+            {
+                var nextIndex = currentIndex + direction;
+                if (nextIndex >= orderedIds.Count)
+                {
+                    nextIndex = 0;
+                    session.InitiativeRound = Math.Max(1, session.InitiativeRound + 1);
+                }
+                else if (nextIndex < 0)
+                {
+                    nextIndex = orderedIds.Count - 1;
+                    session.InitiativeRound = Math.Max(1, session.InitiativeRound - 1);
+                }
+
+                session.InitiativeActiveEntryId = orderedIds[nextIndex];
+            }
+
+            session.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await BroadcastInitiative(sessionId, session);
+        }
+
+        public async Task SetInitiativeActive(int sessionId, int? entryId)
+        {
+            var (session, role) = await GetSessionRole(sessionId);
+            if (role != VttRole.DM)
+            {
+                throw new HubException("DM only.");
+            }
+
+            if (entryId.HasValue)
+            {
+                var exists = await _context.VttInitiativeEntries
+                    .AnyAsync(i => i.SessionId == sessionId && i.Id == entryId.Value);
+
+                if (!exists)
+                {
+                    throw new HubException("Initiative entry not found.");
+                }
+            }
+
+            session.InitiativeActiveEntryId = entryId;
+            session.InitiativeRound = session.InitiativeRound < 1 ? 1 : session.InitiativeRound;
+            session.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await BroadcastInitiative(sessionId, session);
+        }
+
         public sealed class CreateTokenRequest
         {
             public string Name { get; set; } = string.Empty;
@@ -437,6 +738,20 @@ namespace GameApi.Hubs
             public int? GridOffsetY { get; set; }
             public int? Width { get; set; }
             public int? Height { get; set; }
+        }
+
+        public sealed class AddInitiativeEntryRequest
+        {
+            public string? Name { get; set; }
+            public int Value { get; set; }
+            public int? TokenId { get; set; }
+        }
+
+        public sealed class UpdateInitiativeEntryRequest
+        {
+            public int EntryId { get; set; }
+            public string? Name { get; set; }
+            public int? Value { get; set; }
         }
 
         public sealed class PingRequest

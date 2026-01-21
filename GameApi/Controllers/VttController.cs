@@ -265,6 +265,23 @@ namespace GameApi.Controllers
                 })
                 .ToListAsync();
 
+            var initiativeEntries = await _context.VttInitiativeEntries
+                .AsNoTracking()
+                .Where(i => i.SessionId == id)
+                .OrderByDescending(i => i.Value)
+                .ThenBy(i => i.CreatedAt)
+                .ThenBy(i => i.Id)
+                .Select(i => new
+                {
+                    id = i.Id,
+                    sessionId = i.SessionId,
+                    tokenId = i.TokenId,
+                    name = i.Name,
+                    value = i.Value,
+                    createdAt = i.CreatedAt
+                })
+                .ToListAsync();
+
             return Ok(new
             {
                 session = new
@@ -290,7 +307,13 @@ namespace GameApi.Controllers
                     },
                 tokens,
                 members,
-                chat
+                chat,
+                initiative = new
+                {
+                    entries = initiativeEntries,
+                    activeEntryId = session.InitiativeActiveEntryId,
+                    round = session.InitiativeRound < 1 ? 1 : session.InitiativeRound
+                }
             });
         }
 
