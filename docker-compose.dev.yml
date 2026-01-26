@@ -1,0 +1,16 @@
+services:
+  gameapi:
+    container_name: dnd-gameapi-dev
+    build:
+      context: ./GameApi
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env.dev
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - ./GameApi:/src
+    working_dir: /src
+    restart: unless-stopped
