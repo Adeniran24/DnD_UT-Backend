@@ -1,14 +1,23 @@
 services:
   gameapi:
+    image: dnd_ut-backend-gameapi:latest
     container_name: dnd-gameapi-dev
-    build:
-      context: ./GameApi
-      dockerfile: Dockerfile.dev
     ports:
       - "5000:5000"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-    volumes:
-      - ./GameApi:/src
-    working_dir: /src
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection}
+      Jwt__Key: ${Jwt__Key}
+      Jwt__Issuer: ${Jwt__Issuer:-GameApi}
+      Jwt__Audience: ${Jwt__Audience:-GameApiUsers}
+    restart: unless-stopped
+
+  frontend:
+    image: adeniranak/dnd-frontend:latest
+    container_name: dnd-frontend-dev
+    ports:
+      - "3000:80"
+    depends_on:
+      - gameapi
     restart: unless-stopped
