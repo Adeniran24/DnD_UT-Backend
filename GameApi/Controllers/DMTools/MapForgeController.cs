@@ -32,6 +32,9 @@ namespace GameApi.Controllers
         // ===== Helpers =====
         private static string CampaignId() => $"campaign-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         private static string NodeId() => $"node-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Random.Shared.Next(10000, 99999)}";
+        private const string AccessOwner = "owner";
+        private const string AccessEditor = "editor";
+        private const string AccessViewer = "viewer";
 
         private int GetCurrentUserId()
         {
@@ -61,6 +64,37 @@ namespace GameApi.Controllers
             {
                 return fallback;
             }
+        }
+
+        private static string NormalizeAccessRole(string? role)
+        {
+            var normalized = (role ?? string.Empty).Trim().ToLowerInvariant();
+            return normalized switch
+            {
+                AccessEditor => AccessEditor,
+                AccessViewer => AccessViewer,
+                _ => AccessViewer
+            };
+        }
+
+        private static bool CanEdit(string role) => role == AccessOwner || role == AccessEditor;
+
+        private async Task<string?> GetAccessRoleAsync(MapCampaign campaign, int userId)
+        {
+            if (campaign.OwnerUserId == userId) return AccessOwner;
+
+            var share = await _db.MapCampaignShares
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.CampaignId == campaign.Id && s.UserId == userId);
+
+            return share is null ? null : NormalizeAccessRole(share.Role);
+        }
+
+        private static bool HasDeletedNodes(List<FlowNode> existingNodes, List<FlowNode> incomingNodes)
+        {
+            if (existingNodes.Count == 0) return false;
+            var incomingIds = new HashSet<string>(incomingNodes.Select(n => n.Id));
+            return existingNodes.Any(n => !incomingIds.Contains(n.Id));
         }
 
         // ===== Image upload helpers =====
@@ -194,14 +228,14 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             // Lista (AsNoTracking gyorsabb)
-            var entities = await _db.MapCampaigns
+            var ownedEntities = await _db.MapCampaigns
                 .AsNoTracking()
                 .Where(c => c.OwnerUserId == userId)
                 .OrderByDescending(c => c.UpdatedAt)
                 .ToListAsync();
 
-            // Node/Edge count JSON parse-ból
-            var list = entities.Select(e =>
+            // Node/Edge count JSON parsebol
+            var ownedList = ownedEntities.Select(e =>
             {
                 var nodes = FromJson(e.NodesJson ?? "[]", new List<FlowNode>());
                 var edges = FromJson(e.EdgesJson ?? "[]", new List<FlowEdge>());
@@ -213,11 +247,43 @@ namespace GameApi.Controllers
                     UpdatedAt = e.UpdatedAt,
                     NodeCount = nodes.Count,
                     EdgeCount = edges.Count,
-                    CoverImageUrl = e.CoverImageUrl
+                    CoverImageUrl = e.CoverImageUrl,
+                    AccessRole = AccessOwner,
+                    IsOwner = true
                 };
             }).ToList();
 
-            return Ok(list);
+            var sharedEntries = await (
+                from share in _db.MapCampaignShares.AsNoTracking()
+                join campaign in _db.MapCampaigns.AsNoTracking() on share.CampaignId equals campaign.Id
+                where share.UserId == userId && campaign.OwnerUserId != userId
+                select new { Campaign = campaign, share.Role }
+            ).ToListAsync();
+
+            var sharedList = sharedEntries.Select(entry =>
+            {
+                var nodes = FromJson(entry.Campaign.NodesJson ?? "[]", new List<FlowNode>());
+                var edges = FromJson(entry.Campaign.EdgesJson ?? "[]", new List<FlowEdge>());
+
+                return new CampaignSummary
+                {
+                    Id = entry.Campaign.Id,
+                    Name = entry.Campaign.Name,
+                    UpdatedAt = entry.Campaign.UpdatedAt,
+                    NodeCount = nodes.Count,
+                    EdgeCount = edges.Count,
+                    CoverImageUrl = entry.Campaign.CoverImageUrl,
+                    AccessRole = NormalizeAccessRole(entry.Role),
+                    IsOwner = false
+                };
+            }).ToList();
+
+            var combined = ownedList
+                .Concat(sharedList)
+                .OrderByDescending(c => c.UpdatedAt)
+                .ToList();
+
+            return Ok(combined);
         }
 
         // GET /api/mapforge/campaigns/{id}  (csak saját)
@@ -228,9 +294,13 @@ namespace GameApi.Controllers
 
             var entity = await _db.MapCampaigns
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
 
             return Ok(new Campaign
@@ -240,7 +310,9 @@ namespace GameApi.Controllers
                 Nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>()),
                 Edges = FromJson(entity.EdgesJson ?? "[]", new List<FlowEdge>()),
                 UpdatedAt = entity.UpdatedAt,
-                CoverImageUrl = entity.CoverImageUrl
+                CoverImageUrl = entity.CoverImageUrl,
+                AccessRole = accessRole,
+                IsOwner = accessRole == AccessOwner
             });
         }
 
@@ -293,10 +365,28 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
+
+            if (accessRole == AccessEditor)
+            {
+                if (req.Nodes is null)
+                    return StatusCode(403, new ApiError("node_delete_forbidden", "Editors cannot delete nodes."));
+
+                var existingNodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>());
+                var incomingNodes = req.Nodes ?? new List<FlowNode>();
+                if (HasDeletedNodes(existingNodes, incomingNodes))
+                    return StatusCode(403, new ApiError("node_delete_forbidden", "Editors cannot delete nodes."));
+            }
 
             entity.Name = req.Name.Trim();
             entity.NodesJson = ToJson(req.Nodes ?? new List<FlowNode>());
@@ -312,7 +402,9 @@ namespace GameApi.Controllers
                 Nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>()),
                 Edges = FromJson(entity.EdgesJson ?? "[]", new List<FlowEdge>()),
                 UpdatedAt = entity.UpdatedAt,
-                CoverImageUrl = entity.CoverImageUrl
+                CoverImageUrl = entity.CoverImageUrl,
+                AccessRole = accessRole,
+                IsOwner = accessRole == AccessOwner
             });
         }
 
@@ -325,10 +417,17 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
 
             entity.Name = req.Name.Trim();
             entity.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -341,7 +440,9 @@ namespace GameApi.Controllers
                 Nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>()),
                 Edges = FromJson(entity.EdgesJson ?? "[]", new List<FlowEdge>()),
                 UpdatedAt = entity.UpdatedAt,
-                CoverImageUrl = entity.CoverImageUrl
+                CoverImageUrl = entity.CoverImageUrl,
+                AccessRole = accessRole,
+                IsOwner = accessRole == AccessOwner
             });
         }
 
@@ -357,6 +458,8 @@ namespace GameApi.Controllers
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
 
+            var shares = _db.MapCampaignShares.Where(s => s.CampaignId == id);
+            _db.MapCampaignShares.RemoveRange(shares);
             _db.MapCampaigns.Remove(entity);
             await _db.SaveChangesAsync();
 
@@ -377,10 +480,17 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
 
             try
             {
@@ -409,10 +519,17 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
 
             var nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>());
 
@@ -431,10 +548,10 @@ namespace GameApi.Controllers
                 }
             };
 
-            // Ha a client nem küldte, legyen biztosan default
+            // Ha a client nem k??ldte, legyen biztosan default
             node.Data ??= new NodeData();
             node.Data.ImageUrl ??= null;
-            // Statblock maradhat null (Monster esetén majd UI küldi)
+            // Statblock maradhat null (Monster eset??n majd UI k??ldi)
 
             nodes.Add(node);
 
@@ -453,10 +570,17 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
 
             var nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>());
             var node = nodes.FirstOrDefault(n => n.Id == nodeId);
@@ -477,7 +601,7 @@ namespace GameApi.Controllers
                 if (req.Data.Tags is not null)
                     node.Data.Tags = req.Data.Tags;
 
-                // ÚJ mezők
+                // ??J mez??k
                 if (req.Data.ImageUrl is not null)
                     node.Data.ImageUrl = req.Data.ImageUrl;
 
@@ -534,10 +658,17 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
 
             var nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>());
             var node = nodes.FirstOrDefault(n => n.Id == nodeId);
@@ -570,10 +701,17 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
 
             var nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>());
             var node = nodes.FirstOrDefault(n => n.Id == nodeId);
@@ -603,10 +741,17 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
 
             var nodes = FromJson(entity.NodesJson ?? "[]", new List<FlowNode>());
 
@@ -638,10 +783,17 @@ namespace GameApi.Controllers
             var userId = GetCurrentUserId();
 
             var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (entity is null)
                 return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var accessRole = await GetAccessRoleAsync(entity, userId);
+            if (accessRole is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            if (!CanEdit(accessRole))
+                return StatusCode(403, new ApiError("forbidden", "You don't have permission to edit this campaign."));
 
             var edges = FromJson(entity.EdgesJson ?? "[]", new List<FlowEdge>());
 
@@ -657,10 +809,153 @@ namespace GameApi.Controllers
         }
 
         // =========================================================
+        // Sharing endpoints (owner only)
+        // =========================================================
+
+        [HttpGet("campaigns/{id}/shares")]
+        public async Task<ActionResult<List<CampaignShareDto>>> GetShares(string id)
+        {
+            var userId = GetCurrentUserId();
+
+            var entity = await _db.MapCampaigns
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (entity is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var shares = await _db.MapCampaignShares
+                .AsNoTracking()
+                .Where(s => s.CampaignId == id)
+                .Join(_db.Users.AsNoTracking(), s => s.UserId, u => u.Id,
+                    (s, u) => new CampaignShareDto
+                    {
+                        UserId = u.Id,
+                        Username = u.Username,
+                        Role = NormalizeAccessRole(s.Role)
+                    })
+                .OrderBy(s => s.Username)
+                .ToListAsync();
+
+            return Ok(shares);
+        }
+
+        [HttpPost("campaigns/{id}/shares")]
+        public async Task<ActionResult<CampaignShareDto>> CreateShare(string id, [FromBody] CampaignShareRequest req)
+        {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var userId = GetCurrentUserId();
+
+            var entity = await _db.MapCampaigns
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (entity is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var username = req.Username.Trim();
+            var role = NormalizeAccessRole(req.Role);
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user is null)
+                return NotFound(new ApiError("user_not_found", "User not found."));
+
+            if (user.Id == userId)
+                return BadRequest(new ApiError("invalid_share", "You already own this campaign."));
+
+            var share = await _db.MapCampaignShares
+                .FirstOrDefaultAsync(s => s.CampaignId == id && s.UserId == user.Id);
+
+            if (share is null)
+            {
+                share = new MapCampaignShare
+                {
+                    CampaignId = id,
+                    UserId = user.Id,
+                    Role = role,
+                    SharedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    SharedByUserId = userId
+                };
+                _db.MapCampaignShares.Add(share);
+            }
+            else
+            {
+                share.Role = role;
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new CampaignShareDto
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                Role = NormalizeAccessRole(share.Role)
+            });
+        }
+
+        [HttpPut("campaigns/{id}/shares/{shareUserId}")]
+        public async Task<ActionResult<CampaignShareDto>> UpdateShare(string id, int shareUserId, [FromBody] CampaignShareRoleRequest req)
+        {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var userId = GetCurrentUserId();
+
+            var entity = await _db.MapCampaigns
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (entity is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var share = await _db.MapCampaignShares
+                .FirstOrDefaultAsync(s => s.CampaignId == id && s.UserId == shareUserId);
+
+            if (share is null)
+                return NotFound(new ApiError("share_not_found", "Share not found."));
+
+            share.Role = NormalizeAccessRole(req.Role);
+            await _db.SaveChangesAsync();
+
+            var username = await _db.Users
+                .Where(u => u.Id == shareUserId)
+                .Select(u => u.Username)
+                .FirstOrDefaultAsync() ?? "User";
+
+            return Ok(new CampaignShareDto
+            {
+                UserId = shareUserId,
+                Username = username,
+                Role = NormalizeAccessRole(share.Role)
+            });
+        }
+
+        [HttpDelete("campaigns/{id}/shares/{shareUserId}")]
+        public async Task<IActionResult> DeleteShare(string id, int shareUserId)
+        {
+            var userId = GetCurrentUserId();
+
+            var entity = await _db.MapCampaigns
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (entity is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var share = await _db.MapCampaignShares
+                .FirstOrDefaultAsync(s => s.CampaignId == id && s.UserId == shareUserId);
+
+            if (share is null)
+                return NotFound(new ApiError("share_not_found", "Share not found."));
+
+            _db.MapCampaignShares.Remove(share);
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // =========================================================
         // Models + DB entity (same file)
         // =========================================================
 
-        // DB entity (EF Core) -> MapCampaigns tábla
+        // DB entity (EF Core) -> MapCampaigns table
         public sealed class MapCampaign
         {
             [Key]
@@ -680,7 +975,7 @@ namespace GameApi.Controllers
 
             public int OwnerUserId { get; set; }
 
-            // ÚJ: kampány borítókép URL (relatív: /uploads/...)
+            // New: campaign cover image URL (relative: /uploads/...)
             public string? CoverImageUrl { get; set; }
         }
 
@@ -697,8 +992,11 @@ namespace GameApi.Controllers
             public List<FlowEdge> Edges { get; set; } = new();
             public long UpdatedAt { get; set; }
 
-            // ÚJ
+            // New
             public string? CoverImageUrl { get; set; }
+
+            public string AccessRole { get; set; } = AccessOwner;
+            public bool IsOwner { get; set; } = true;
         }
 
         public sealed class CampaignSummary
@@ -709,8 +1007,24 @@ namespace GameApi.Controllers
             public int NodeCount { get; set; }
             public int EdgeCount { get; set; }
 
-            // ÚJ
+            // New
             public string? CoverImageUrl { get; set; }
+            public string AccessRole { get; set; } = AccessOwner;
+            public bool IsOwner { get; set; } = true;
+        }
+
+        public sealed class MapCampaignShare
+        {
+            [Required, MaxLength(64)]
+            public string CampaignId { get; set; } = default!;
+
+            public int UserId { get; set; }
+
+            [Required, MaxLength(10)]
+            public string Role { get; set; } = AccessViewer;
+
+            public long SharedAt { get; set; }
+            public int SharedByUserId { get; set; }
         }
 
         public sealed class FlowNode
@@ -844,6 +1158,28 @@ namespace GameApi.Controllers
             }
             public string Code { get; set; }
             public string Message { get; set; }
+        }
+
+        public sealed class CampaignShareDto
+        {
+            public int UserId { get; set; }
+            public string Username { get; set; } = string.Empty;
+            public string Role { get; set; } = AccessViewer;
+        }
+
+        public sealed class CampaignShareRequest
+        {
+            [Required, MinLength(1), MaxLength(40)]
+            public string Username { get; set; } = string.Empty;
+
+            [Required, MinLength(4), MaxLength(10)]
+            public string Role { get; set; } = AccessViewer;
+        }
+
+        public sealed class CampaignShareRoleRequest
+        {
+            [Required, MinLength(4), MaxLength(10)]
+            public string Role { get; set; } = AccessViewer;
         }
     }
 }

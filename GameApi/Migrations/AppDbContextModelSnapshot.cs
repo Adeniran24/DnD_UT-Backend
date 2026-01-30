@@ -80,6 +80,31 @@ namespace DndApi.Migrations
                     b.ToTable("MapCampaigns");
                 });
 
+            modelBuilder.Entity("GameApi.Controllers.MapForgeController+MapCampaignShare", b =>
+                {
+                    b.Property<string>("CampaignId")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<long>("SharedAt")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SharedByUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CampaignId", "UserId");
+
+                    b.ToTable("MapCampaignShares");
+                });
+
             modelBuilder.Entity("GameApi.Models.Channel", b =>
                 {
                     b.Property<int>("Id")
@@ -311,60 +336,6 @@ namespace DndApi.Migrations
                     b.Property<bool>("saveProf_wis")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<bool>("skillProf_acrobatics")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_animalHandling")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_arcana")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_athletics")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_deception")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_history")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_insight")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_intimidation")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_investigation")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_medicine")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_nature")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_perception")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_performance")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_persuasion")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_religion")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_sleightOfHand")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_stealth")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("skillProf_survival")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<bool>("skillExp_acrobatics")
                         .HasColumnType("tinyint(1)");
 
@@ -417,6 +388,60 @@ namespace DndApi.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("skillExp_survival")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_acrobatics")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_animalHandling")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_arcana")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_athletics")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_deception")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_history")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_insight")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_intimidation")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_investigation")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_medicine")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_nature")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_perception")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_performance")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_persuasion")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_religion")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_sleightOfHand")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_stealth")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("skillProf_survival")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("skin")
@@ -979,6 +1004,9 @@ namespace DndApi.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("HasCompletedTutorial")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
@@ -994,10 +1022,6 @@ namespace DndApi.Migrations
 
                     b.Property<string>("ProfileThemeJson")
                         .HasColumnType("longtext");
-
-                    b.Property<bool>("HasCompletedTutorial")
-                        .HasColumnType("tinyint(1)")
-                        .HasDefaultValue(false);
 
                     b.Property<string>("Role")
                         .IsRequired()

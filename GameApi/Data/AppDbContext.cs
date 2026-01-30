@@ -207,6 +207,12 @@ namespace GameApi.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // -------------------------------
+            // MapForge share composite key
+            // -------------------------------
+            modelBuilder.Entity<MapForgeController.MapCampaignShare>()
+                .HasKey(ms => new { ms.CampaignId, ms.UserId });
+
+            // -------------------------------
             // DND2014 Relationships
             // -------------------------------
 
@@ -352,6 +358,7 @@ modelBuilder.Entity<Character>()
             
         }
         public DbSet<MapForgeController.MapCampaign> MapCampaigns { get; set; }
+        public DbSet<MapForgeController.MapCampaignShare> MapCampaignShares { get; set; }
 
         
     }
