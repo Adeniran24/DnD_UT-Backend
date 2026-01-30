@@ -212,6 +212,10 @@ namespace GameApi.Data
             modelBuilder.Entity<MapForgeController.MapCampaignShare>()
                 .HasKey(ms => new { ms.CampaignId, ms.UserId });
 
+            modelBuilder.Entity<MapForgeController.MapCampaignInvite>()
+                .HasIndex(mi => mi.Token)
+                .IsUnique();
+
             // -------------------------------
             // DND2014 Relationships
             // -------------------------------
@@ -359,6 +363,7 @@ modelBuilder.Entity<Character>()
         }
         public DbSet<MapForgeController.MapCampaign> MapCampaigns { get; set; }
         public DbSet<MapForgeController.MapCampaignShare> MapCampaignShares { get; set; }
+        public DbSet<MapForgeController.MapCampaignInvite> MapCampaignInvites { get; set; }
 
         
     }

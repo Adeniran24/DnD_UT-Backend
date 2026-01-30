@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using GameApi.Data;
+using GameApi.Models;
 
 namespace GameApi.Controllers
 {
@@ -35,6 +36,10 @@ namespace GameApi.Controllers
         private const string AccessOwner = "owner";
         private const string AccessEditor = "editor";
         private const string AccessViewer = "viewer";
+        private const string InviteStatusPending = "pending";
+        private const string InviteStatusAccepted = "accepted";
+        private const string InviteStatusDeclined = "declined";
+        private const string InviteStatusExpired = "expired";
 
         private int GetCurrentUserId()
         {
@@ -88,6 +93,27 @@ namespace GameApi.Controllers
                 .FirstOrDefaultAsync(s => s.CampaignId == campaign.Id && s.UserId == userId);
 
             return share is null ? null : NormalizeAccessRole(share.Role);
+        }
+
+        private async Task<bool> IsFriendAsync(int userId, int targetUserId)
+        {
+            return await _db.Friendships
+                .AsNoTracking()
+                .AnyAsync(f =>
+                    ((f.RequesterId == userId && f.AddresseeId == targetUserId) ||
+                     (f.RequesterId == targetUserId && f.AddresseeId == userId)) &&
+                    f.Status == FriendshipStatus.Accepted);
+        }
+
+        private static string GenerateInviteToken()
+        {
+            return Guid.NewGuid().ToString("N");
+        }
+
+        private static bool IsInviteExpired(long? expiresAt)
+        {
+            if (!expiresAt.HasValue) return false;
+            return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() > expiresAt.Value;
         }
 
         private static bool HasDeletedNodes(List<FlowNode> existingNodes, List<FlowNode> incomingNodes)
@@ -460,6 +486,8 @@ namespace GameApi.Controllers
 
             var shares = _db.MapCampaignShares.Where(s => s.CampaignId == id);
             _db.MapCampaignShares.RemoveRange(shares);
+            var invites = _db.MapCampaignInvites.Where(i => i.CampaignId == id);
+            _db.MapCampaignInvites.RemoveRange(invites);
             _db.MapCampaigns.Remove(entity);
             await _db.SaveChangesAsync();
 
@@ -843,54 +871,7 @@ namespace GameApi.Controllers
         [HttpPost("campaigns/{id}/shares")]
         public async Task<ActionResult<CampaignShareDto>> CreateShare(string id, [FromBody] CampaignShareRequest req)
         {
-            if (!ModelState.IsValid) return ValidationProblem(ModelState);
-
-            var userId = GetCurrentUserId();
-
-            var entity = await _db.MapCampaigns
-                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
-
-            if (entity is null)
-                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
-
-            var username = req.Username.Trim();
-            var role = NormalizeAccessRole(req.Role);
-
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
-            if (user is null)
-                return NotFound(new ApiError("user_not_found", "User not found."));
-
-            if (user.Id == userId)
-                return BadRequest(new ApiError("invalid_share", "You already own this campaign."));
-
-            var share = await _db.MapCampaignShares
-                .FirstOrDefaultAsync(s => s.CampaignId == id && s.UserId == user.Id);
-
-            if (share is null)
-            {
-                share = new MapCampaignShare
-                {
-                    CampaignId = id,
-                    UserId = user.Id,
-                    Role = role,
-                    SharedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                    SharedByUserId = userId
-                };
-                _db.MapCampaignShares.Add(share);
-            }
-            else
-            {
-                share.Role = role;
-            }
-
-            await _db.SaveChangesAsync();
-
-            return Ok(new CampaignShareDto
-            {
-                UserId = user.Id,
-                Username = user.Username,
-                Role = NormalizeAccessRole(share.Role)
-            });
+            return BadRequest(new ApiError("share_flow_changed", "Sharing now requires invites. Use /invites/friend or /invites/link."));
         }
 
         [HttpPut("campaigns/{id}/shares/{shareUserId}")]
@@ -949,6 +930,296 @@ namespace GameApi.Controllers
             await _db.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // =========================================================
+        // Invite endpoints
+        // =========================================================
+
+        [HttpPost("campaigns/{id}/invites/friend")]
+        public async Task<ActionResult<CampaignInviteDto>> CreateFriendInvite(string id, [FromBody] CampaignInviteRequest req)
+        {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var userId = GetCurrentUserId();
+
+            var campaign = await _db.MapCampaigns
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (campaign is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var username = req.Username.Trim();
+            var role = NormalizeAccessRole(req.Role);
+
+            var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == username);
+            if (user is null)
+                return NotFound(new ApiError("user_not_found", "User not found."));
+
+            if (user.Id == userId)
+                return BadRequest(new ApiError("invalid_invite", "You already own this campaign."));
+
+            var isFriend = await IsFriendAsync(userId, user.Id);
+            if (!isFriend)
+                return BadRequest(new ApiError("not_friends", "You can only invite friends directly."));
+
+            var existingShare = await _db.MapCampaignShares
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.CampaignId == id && s.UserId == user.Id);
+            if (existingShare is not null)
+                return BadRequest(new ApiError("already_shared", "User already has access."));
+
+            var invite = await _db.MapCampaignInvites
+                .FirstOrDefaultAsync(i => i.CampaignId == id && i.TargetUserId == user.Id && i.Status == InviteStatusPending);
+
+            if (invite is null)
+            {
+                invite = new MapCampaignInvite
+                {
+                    CampaignId = id,
+                    CreatedByUserId = userId,
+                    TargetUserId = user.Id,
+                    Role = role,
+                    Token = null,
+                    CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    ExpiresAt = null,
+                    AcceptedAt = null,
+                    AcceptedByUserId = null,
+                    Status = InviteStatusPending,
+                    IsLink = false
+                };
+                _db.MapCampaignInvites.Add(invite);
+            }
+            else
+            {
+                invite.Role = role;
+                invite.CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                invite.Status = InviteStatusPending;
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new CampaignInviteDto
+            {
+                Id = invite.Id,
+                CampaignId = invite.CampaignId,
+                CampaignName = campaign.Name,
+                Role = invite.Role,
+                CreatedAt = invite.CreatedAt,
+                ExpiresAt = invite.ExpiresAt,
+                Status = invite.Status,
+                IsLink = invite.IsLink
+            });
+        }
+
+        [HttpPost("campaigns/{id}/invites/link")]
+        public async Task<ActionResult<CampaignInviteLinkDto>> CreateLinkInvite(string id, [FromBody] CampaignInviteLinkRequest req)
+        {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var userId = GetCurrentUserId();
+
+            var campaign = await _db.MapCampaigns
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == userId);
+
+            if (campaign is null)
+                return NotFound(new ApiError("campaign_not_found", "Campaign not found."));
+
+            var role = NormalizeAccessRole(req.Role);
+            var token = GenerateInviteToken();
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var expiresAt = now + (10 * 60 * 1000);
+
+            var invite = new MapCampaignInvite
+            {
+                CampaignId = id,
+                CreatedByUserId = userId,
+                TargetUserId = null,
+                Role = role,
+                Token = token,
+                CreatedAt = now,
+                ExpiresAt = expiresAt,
+                AcceptedAt = null,
+                AcceptedByUserId = null,
+                Status = InviteStatusPending,
+                IsLink = true
+            };
+
+            _db.MapCampaignInvites.Add(invite);
+            await _db.SaveChangesAsync();
+
+            return Ok(new CampaignInviteLinkDto
+            {
+                Token = token,
+                Role = role,
+                ExpiresAt = expiresAt
+            });
+        }
+
+        [HttpGet("invites")]
+        public async Task<ActionResult<List<CampaignInviteDto>>> GetMyInvites()
+        {
+            var userId = GetCurrentUserId();
+
+            var invites = await _db.MapCampaignInvites
+                .AsNoTracking()
+                .Where(i => i.TargetUserId == userId && i.Status == InviteStatusPending)
+                .Join(_db.MapCampaigns.AsNoTracking(), i => i.CampaignId, c => c.Id, (i, c) => new { Invite = i, Campaign = c })
+                .ToListAsync();
+
+            var list = invites.Select(item => new CampaignInviteDto
+            {
+                Id = item.Invite.Id,
+                CampaignId = item.Invite.CampaignId,
+                CampaignName = item.Campaign.Name,
+                Role = item.Invite.Role,
+                CreatedAt = item.Invite.CreatedAt,
+                ExpiresAt = item.Invite.ExpiresAt,
+                Status = item.Invite.Status,
+                IsLink = item.Invite.IsLink
+            }).ToList();
+
+            return Ok(list);
+        }
+
+        [HttpPost("invites/{inviteId}/accept")]
+        public async Task<ActionResult<CampaignShareDto>> AcceptInvite(int inviteId)
+        {
+            var userId = GetCurrentUserId();
+
+            var invite = await _db.MapCampaignInvites
+                .FirstOrDefaultAsync(i => i.Id == inviteId && i.TargetUserId == userId);
+
+            if (invite is null)
+                return NotFound(new ApiError("invite_not_found", "Invite not found."));
+
+            if (invite.Status != InviteStatusPending)
+                return BadRequest(new ApiError("invite_not_pending", "Invite is not pending."));
+
+            if (IsInviteExpired(invite.ExpiresAt))
+            {
+                invite.Status = InviteStatusExpired;
+                await _db.SaveChangesAsync();
+                return BadRequest(new ApiError("invite_expired", "Invite expired."));
+            }
+
+            var existingShare = await _db.MapCampaignShares
+                .FirstOrDefaultAsync(s => s.CampaignId == invite.CampaignId && s.UserId == userId);
+
+            if (existingShare is null)
+            {
+                existingShare = new MapCampaignShare
+                {
+                    CampaignId = invite.CampaignId,
+                    UserId = userId,
+                    Role = NormalizeAccessRole(invite.Role),
+                    SharedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    SharedByUserId = invite.CreatedByUserId
+                };
+                _db.MapCampaignShares.Add(existingShare);
+            }
+
+            invite.Status = InviteStatusAccepted;
+            invite.AcceptedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            invite.AcceptedByUserId = userId;
+
+            await _db.SaveChangesAsync();
+
+            var username = await _db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Username)
+                .FirstOrDefaultAsync() ?? "User";
+
+            return Ok(new CampaignShareDto
+            {
+                UserId = userId,
+                Username = username,
+                Role = NormalizeAccessRole(existingShare.Role)
+            });
+        }
+
+        [HttpPost("invites/{inviteId}/decline")]
+        public async Task<IActionResult> DeclineInvite(int inviteId)
+        {
+            var userId = GetCurrentUserId();
+
+            var invite = await _db.MapCampaignInvites
+                .FirstOrDefaultAsync(i => i.Id == inviteId && i.TargetUserId == userId);
+
+            if (invite is null)
+                return NotFound(new ApiError("invite_not_found", "Invite not found."));
+
+            if (invite.Status != InviteStatusPending)
+                return BadRequest(new ApiError("invite_not_pending", "Invite is not pending."));
+
+            invite.Status = InviteStatusDeclined;
+            invite.AcceptedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            invite.AcceptedByUserId = userId;
+
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpPost("invites/claim")]
+        public async Task<ActionResult<CampaignShareDto>> ClaimInvite([FromBody] CampaignInviteClaimRequest req)
+        {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var userId = GetCurrentUserId();
+            var token = req.Token.Trim();
+
+            var invite = await _db.MapCampaignInvites
+                .FirstOrDefaultAsync(i => i.Token == token && i.IsLink);
+
+            if (invite is null)
+                return NotFound(new ApiError("invite_not_found", "Invite not found."));
+
+            if (invite.Status != InviteStatusPending)
+                return BadRequest(new ApiError("invite_not_pending", "Invite is not pending."));
+
+            if (IsInviteExpired(invite.ExpiresAt))
+            {
+                invite.Status = InviteStatusExpired;
+                await _db.SaveChangesAsync();
+                return BadRequest(new ApiError("invite_expired", "Invite expired."));
+            }
+
+            var existingShare = await _db.MapCampaignShares
+                .FirstOrDefaultAsync(s => s.CampaignId == invite.CampaignId && s.UserId == userId);
+
+            if (existingShare is null)
+            {
+                existingShare = new MapCampaignShare
+                {
+                    CampaignId = invite.CampaignId,
+                    UserId = userId,
+                    Role = NormalizeAccessRole(invite.Role),
+                    SharedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    SharedByUserId = invite.CreatedByUserId
+                };
+                _db.MapCampaignShares.Add(existingShare);
+            }
+
+            invite.Status = InviteStatusAccepted;
+            invite.AcceptedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            invite.AcceptedByUserId = userId;
+
+            await _db.SaveChangesAsync();
+
+            var username = await _db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Username)
+                .FirstOrDefaultAsync() ?? "User";
+
+            return Ok(new CampaignShareDto
+            {
+                UserId = userId,
+                Username = username,
+                Role = NormalizeAccessRole(existingShare.Role)
+            });
         }
 
         // =========================================================
@@ -1025,6 +1296,34 @@ namespace GameApi.Controllers
 
             public long SharedAt { get; set; }
             public int SharedByUserId { get; set; }
+        }
+
+        public sealed class MapCampaignInvite
+        {
+            [Key]
+            public int Id { get; set; }
+
+            [Required, MaxLength(64)]
+            public string CampaignId { get; set; } = default!;
+
+            public int CreatedByUserId { get; set; }
+            public int? TargetUserId { get; set; }
+
+            [Required, MaxLength(10)]
+            public string Role { get; set; } = AccessViewer;
+
+            [MaxLength(64)]
+            public string? Token { get; set; }
+
+            public long CreatedAt { get; set; }
+            public long? ExpiresAt { get; set; }
+            public long? AcceptedAt { get; set; }
+            public int? AcceptedByUserId { get; set; }
+
+            [Required, MaxLength(12)]
+            public string Status { get; set; } = InviteStatusPending;
+
+            public bool IsLink { get; set; }
         }
 
         public sealed class FlowNode
@@ -1180,6 +1479,46 @@ namespace GameApi.Controllers
         {
             [Required, MinLength(4), MaxLength(10)]
             public string Role { get; set; } = AccessViewer;
+        }
+
+        public sealed class CampaignInviteRequest
+        {
+            [Required, MinLength(1), MaxLength(40)]
+            public string Username { get; set; } = string.Empty;
+
+            [Required, MinLength(4), MaxLength(10)]
+            public string Role { get; set; } = AccessViewer;
+        }
+
+        public sealed class CampaignInviteLinkRequest
+        {
+            [Required, MinLength(4), MaxLength(10)]
+            public string Role { get; set; } = AccessViewer;
+        }
+
+        public sealed class CampaignInviteClaimRequest
+        {
+            [Required, MinLength(6), MaxLength(80)]
+            public string Token { get; set; } = string.Empty;
+        }
+
+        public sealed class CampaignInviteDto
+        {
+            public int Id { get; set; }
+            public string CampaignId { get; set; } = string.Empty;
+            public string CampaignName { get; set; } = string.Empty;
+            public string Role { get; set; } = AccessViewer;
+            public long CreatedAt { get; set; }
+            public long? ExpiresAt { get; set; }
+            public string Status { get; set; } = InviteStatusPending;
+            public bool IsLink { get; set; }
+        }
+
+        public sealed class CampaignInviteLinkDto
+        {
+            public string Token { get; set; } = string.Empty;
+            public string Role { get; set; } = AccessViewer;
+            public long ExpiresAt { get; set; }
         }
     }
 }
