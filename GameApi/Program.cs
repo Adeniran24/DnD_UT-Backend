@@ -107,7 +107,16 @@ else
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         connectionString,
-        new MariaDbServerVersion(new Version(10, 4, 32))
+        new MariaDbServerVersion(new Version(10, 4, 32)),
+        mySqlOptions =>
+        {
+            // Retries for transient network faults/timeouts
+            mySqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null
+            );
+        }
     )
 );
 
@@ -143,10 +152,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var path = context.HttpContext.Request.Path;
 
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    (path.StartsWithSegments("/hubs/chat") ||
-                     path.StartsWithSegments("/hubs/dm") ||
-                     path.StartsWithSegments("/hubs/community") ||
-                     path.StartsWithSegments("/hubs/voice") ||
+                    (path.StartsWithSegments("/hubs/dm") ||
                      path.StartsWithSegments("/hubs/vtt")))
                 {
                     context.Token = accessToken;
@@ -285,8 +291,6 @@ app.UseSwaggerUI(c =>
 // ======================================================
 app.MapControllers().RequireCors("CorsPolicy");
 app.MapHub<DirectMessageHub>("/hubs/dm").RequireCors("CorsPolicy");
-app.MapHub<CommunityHub>("/hubs/community").RequireCors("CorsPolicy");
-app.MapHub<VoiceHub>("/hubs/voice").RequireCors("CorsPolicy");
 app.MapHub<VttHub>("/hubs/vtt").RequireCors("CorsPolicy");
 
 app.Run();
