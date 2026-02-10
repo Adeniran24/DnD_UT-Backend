@@ -225,6 +225,35 @@ namespace GameApi.Controllers
         }
 
         // Felhasználó unblock-olása
+
+
+        // 8.1 Blockolt felhasznalok listaja
+        [HttpGet("blocked")]
+        public async Task<IActionResult> GetBlockedUsers()
+        {
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var blocked = await _context.Friendships
+                .Where(f => (f.RequesterId == userId || f.AddresseeId == userId) &&
+                            f.Status == FriendshipStatus.Blocked)
+                .Include(f => f.Requester)
+                .Include(f => f.Addressee)
+                .ToListAsync();
+
+            var dtos = blocked.Select(f =>
+            {
+                var otherUser = f.RequesterId == userId ? f.Addressee : f.Requester;
+                return new FriendDto
+                {
+                    Id = otherUser?.Id ?? 0,
+                    Username = otherUser?.Username ?? string.Empty,
+                    Status = f.Status.ToString(),
+                    ProfilePictureUrl = otherUser?.ProfilePictureUrl
+                };
+            }).ToList();
+
+            return Ok(dtos);
+        }
 [HttpPost("unblock")]
 public async Task<IActionResult> UnblockFriend([FromQuery] int userIdToUnblock)
 {

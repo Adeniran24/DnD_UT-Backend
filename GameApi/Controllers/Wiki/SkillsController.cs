@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace DnDAPI.Controllers
+namespace GameApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
