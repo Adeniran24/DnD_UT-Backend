@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "GKJU16W4jcU=",
+  "dgSpecHash": "6TsDmOzWMtE=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj",
+  "projectFilePath": "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Adeniran\\.nuget\\packages\\coverlet.collector\\6.0.4\\coverlet.collector.6.0.4.nupkg.sha512",
     "C:\\Users\\Adeniran\\.nuget\\packages\\itext\\9.3.0\\itext.9.3.0.nupkg.sha512",
@@ -127,7 +127,10 @@
     "C:\\Users\\Adeniran\\.nuget\\packages\\xunit.core\\2.9.3\\xunit.core.2.9.3.nupkg.sha512",
     "C:\\Users\\Adeniran\\.nuget\\packages\\xunit.extensibility.core\\2.9.3\\xunit.extensibility.core.2.9.3.nupkg.sha512",
     "C:\\Users\\Adeniran\\.nuget\\packages\\xunit.extensibility.execution\\2.9.3\\xunit.extensibility.execution.2.9.3.nupkg.sha512",
-    "C:\\Users\\Adeniran\\.nuget\\packages\\xunit.runner.visualstudio\\3.1.4\\xunit.runner.visualstudio.3.1.4.nupkg.sha512"
+    "C:\\Users\\Adeniran\\.nuget\\packages\\xunit.runner.visualstudio\\3.1.4\\xunit.runner.visualstudio.3.1.4.nupkg.sha512",
+    "C:\\Users\\Adeniran\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.14\\microsoft.netcore.app.ref.9.0.14.nupkg.sha512",
+    "C:\\Users\\Adeniran\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.14\\microsoft.windowsdesktop.app.ref.9.0.14.nupkg.sha512",
+    "C:\\Users\\Adeniran\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.14\\microsoft.aspnetcore.app.ref.9.0.14.nupkg.sha512"
   ],
   "logs": []
 }

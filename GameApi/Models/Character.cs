@@ -74,25 +74,6 @@ namespace GameApi.Models
         public bool skillProf_stealth { get; set; }
         public bool skillProf_survival { get; set; }
 
-        public bool skillExp_acrobatics { get; set; }
-        public bool skillExp_animalHandling { get; set; }
-        public bool skillExp_arcana { get; set; }
-        public bool skillExp_athletics { get; set; }
-        public bool skillExp_deception { get; set; }
-        public bool skillExp_history { get; set; }
-        public bool skillExp_insight { get; set; }
-        public bool skillExp_intimidation { get; set; }
-        public bool skillExp_investigation { get; set; }
-        public bool skillExp_medicine { get; set; }
-        public bool skillExp_nature { get; set; }
-        public bool skillExp_perception { get; set; }
-        public bool skillExp_performance { get; set; }
-        public bool skillExp_persuasion { get; set; }
-        public bool skillExp_religion { get; set; }
-        public bool skillExp_sleightOfHand { get; set; }
-        public bool skillExp_stealth { get; set; }
-        public bool skillExp_survival { get; set; }
-
         public int armor { get; set; }
         public int initiative { get; set; }
         public int speed { get; set; }

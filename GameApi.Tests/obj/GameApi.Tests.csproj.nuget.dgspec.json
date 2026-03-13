@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj": {}
+    "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj": {
+    "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj",
+        "projectUniqueName": "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj",
         "projectName": "GameApi.Tests",
-        "projectPath": "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj",
+        "projectPath": "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi.Tests\\GameApi.Tests.csproj",
         "packagesPath": "C:\\Users\\Adeniran\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi.Tests\\obj\\",
+        "outputPath": "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Adeniran\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -26,8 +26,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi\\DndApi.csproj": {
-                "projectPath": "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi\\DndApi.csproj"
+              "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\DndApi.csproj": {
+                "projectPath": "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\DndApi.csproj"
               }
             }
           }
@@ -42,7 +42,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net9.0": {
@@ -84,23 +84,37 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.14, 9.0.14]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.14, 9.0.14]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.14, 9.0.14]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi\\DndApi.csproj": {
+    "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\DndApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi\\DndApi.csproj",
+        "projectUniqueName": "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\DndApi.csproj",
         "projectName": "DndApi",
-        "projectPath": "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi\\DndApi.csproj",
+        "projectPath": "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\DndApi.csproj",
         "packagesPath": "C:\\Users\\Adeniran\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Adeniran\\Desktop\\Projects\\Github\\DnD_UT-Backend\\GameApi\\obj\\",
+        "outputPath": "C:\\Users\\Adeniran\\Documents\\GitHub\\DnD_UT-Backend\\GameApi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Adeniran\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -127,7 +141,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net9.0": {
@@ -187,6 +201,24 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.14, 9.0.14]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[9.0.14, 9.0.14]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.14, 9.0.14]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.14, 9.0.14]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -195,7 +227,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
