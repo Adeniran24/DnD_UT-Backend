@@ -27,7 +27,7 @@ public class CharactersControllerTests
         return controller;
     }
 
-    [Fact]
+    [Fact(DisplayName = "Get All Returns Only Characters Owned By Caller.")]
     public async Task GetAll_ReturnsOnlyCharactersOwnedByCaller()
     {
         var context = TestHelper.CreateContext(nameof(GetAll_ReturnsOnlyCharactersOwnedByCaller));
@@ -44,7 +44,37 @@ public class CharactersControllerTests
         Assert.Equal("alpha", characters[0].characterName);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Get By Id returns character for owner.")]
+    public async Task GetById_ReturnsCharacter_ForOwner()
+    {
+        var context = TestHelper.CreateContext(nameof(GetById_ReturnsCharacter_ForOwner));
+        var owned = new Character { userId = 7, characterName = "owner-char" };
+        context.Characters.Add(owned);
+        await context.SaveChangesAsync();
+
+        var controller = CreateController(context, 7);
+        var result = await controller.GetById(owned.id);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var character = Assert.IsType<Character>(ok.Value);
+        Assert.Equal("owner-char", character.characterName);
+    }
+
+    [Fact(DisplayName = "Get By Id returns not found for foreign character.")]
+    public async Task GetById_ReturnsNotFound_ForForeignCharacter()
+    {
+        var context = TestHelper.CreateContext(nameof(GetById_ReturnsNotFound_ForForeignCharacter));
+        var foreign = new Character { userId = 99, characterName = "foreign" };
+        context.Characters.Add(foreign);
+        await context.SaveChangesAsync();
+
+        var controller = CreateController(context, 1);
+        var result = await controller.GetById(foreign.id);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact(DisplayName = "Create Normalizes Json And Assigns Ownership.")]
     public async Task Create_NormalizesJsonAndAssignsOwnership()
     {
         var context = TestHelper.CreateContext(nameof(Create_NormalizesJsonAndAssignsOwnership));
@@ -72,7 +102,19 @@ public class CharactersControllerTests
         Assert.InRange(created.updated_at, created.created_at, DateTime.UtcNow.AddSeconds(1));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Create returns bad request for null payload.")]
+    public async Task Create_ReturnsBadRequest_ForNullPayload()
+    {
+        var context = TestHelper.CreateContext(nameof(Create_ReturnsBadRequest_ForNullPayload));
+        var controller = CreateController(context, 7);
+
+        var result = await controller.Create(null!);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Character payload is required.", badRequest.Value);
+    }
+
+    [Fact(DisplayName = "Update Changes Fields And Keeps Ownership.")]
     public async Task Update_ChangesFieldsAndKeepsOwnership()
     {
         var context = TestHelper.CreateContext(nameof(Update_ChangesFieldsAndKeepsOwnership));
@@ -114,7 +156,22 @@ public class CharactersControllerTests
         Assert.True(persisted.updated_at > originalUpdatedAt);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Update returns bad request for null payload.")]
+    public async Task Update_ReturnsBadRequest_ForNullPayload()
+    {
+        var context = TestHelper.CreateContext(nameof(Update_ReturnsBadRequest_ForNullPayload));
+        var existing = new Character { userId = 1, characterName = "x" };
+        context.Characters.Add(existing);
+        await context.SaveChangesAsync();
+
+        var controller = CreateController(context, 1);
+        var result = await controller.Update(existing.id, null!);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Character payload is required.", badRequest.Value);
+    }
+
+    [Fact(DisplayName = "Update Returns Not Found When Character Does Not Belong To Caller.")]
     public async Task Update_ReturnsNotFound_WhenCharacterDoesNotBelongToCaller()
     {
         var context = TestHelper.CreateContext(nameof(Update_ReturnsNotFound_WhenCharacterDoesNotBelongToCaller));
@@ -127,7 +184,7 @@ public class CharactersControllerTests
         Assert.IsType<NotFoundResult>(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Delete Removes Owned Character.")]
     public async Task Delete_RemovesOwnedCharacter()
     {
         var context = TestHelper.CreateContext(nameof(Delete_RemovesOwnedCharacter));
@@ -142,7 +199,7 @@ public class CharactersControllerTests
         Assert.False(await context.Characters.AnyAsync());
     }
 
-    [Fact]
+    [Fact(DisplayName = "Delete Returns Not Found When Character Missing.")]
     public async Task Delete_ReturnsNotFound_WhenCharacterMissing()
     {
         var context = TestHelper.CreateContext(nameof(Delete_ReturnsNotFound_WhenCharacterMissing));

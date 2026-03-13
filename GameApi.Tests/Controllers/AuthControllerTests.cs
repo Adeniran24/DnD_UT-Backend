@@ -29,7 +29,7 @@ public class AuthControllerTests
         return Convert.ToBase64String(sha.ComputeHash(bytes));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Register Returns Bad Request When Missing Data.")]
     public async Task Register_ReturnsBadRequest_WhenMissingData()
     {
         var (controller, _) = BuildController(nameof(Register_ReturnsBadRequest_WhenMissingData));
@@ -39,7 +39,7 @@ public class AuthControllerTests
         Assert.Equal("Missing data.", badRequest.Value);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Register Detects Duplicate Email.")]
     public async Task Register_DetectsDuplicateEmail()
     {
         var (controller, context) = BuildController(nameof(Register_DetectsDuplicateEmail));
@@ -51,7 +51,7 @@ public class AuthControllerTests
         Assert.Equal("Email already registered.", badRequest.Value);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Register Saves User With Hashed Password.")]
     public async Task Register_SavesUserWithHashedPassword()
     {
         var (controller, context) = BuildController(nameof(Register_SavesUserWithHashedPassword));
@@ -66,7 +66,7 @@ public class AuthControllerTests
         Assert.True(persisted.IsActive);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Login Returns Bad Request When Missing Credentials.")]
     public async Task Login_ReturnsBadRequest_WhenMissingCredentials()
     {
         var (controller, _) = BuildController(nameof(Login_ReturnsBadRequest_WhenMissingCredentials));
@@ -76,7 +76,7 @@ public class AuthControllerTests
         Assert.Equal("Email and password are required.", badRequest.Value);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Login Returns Unauthorized When User Missing.")]
     public async Task Login_ReturnsUnauthorized_WhenUserMissing()
     {
         var (controller, _) = BuildController(nameof(Login_ReturnsUnauthorized_WhenUserMissing));
@@ -86,7 +86,7 @@ public class AuthControllerTests
         Assert.Equal("Invalid credentials.", unauthorized.Value);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Login Returns Unauthorized When Wrong Password.")]
     public async Task Login_ReturnsUnauthorized_WhenWrongPassword()
     {
         var (controller, context) = BuildController(nameof(Login_ReturnsUnauthorized_WhenWrongPassword));
@@ -105,7 +105,7 @@ public class AuthControllerTests
         Assert.Equal("Invalid credentials.", unauthorized.Value);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Login Returns Unauthorized When User Banned.")]
     public async Task Login_ReturnsUnauthorized_WhenUserBanned()
     {
         var (controller, context) = BuildController(nameof(Login_ReturnsUnauthorized_WhenUserBanned));
@@ -124,7 +124,7 @@ public class AuthControllerTests
         Assert.Equal("User is banned.", unauthorized.Value);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Login Returns Token For Valid User.")]
     public async Task Login_ReturnsToken_ForValidUser()
     {
         var (controller, context) = BuildController(nameof(Login_ReturnsToken_ForValidUser));

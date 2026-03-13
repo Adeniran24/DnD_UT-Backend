@@ -27,7 +27,7 @@ public class VttControllerTests
         return controller;
     }
 
-    [Fact]
+    [Fact(DisplayName = "Create Session Creates Session And Map.")]
     public async Task CreateSession_CreatesSessionAndMap()
     {
         var context = TestHelper.CreateContext(nameof(CreateSession_CreatesSessionAndMap));
@@ -45,7 +45,7 @@ public class VttControllerTests
         Assert.Single(context.VttSessionMembers);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Get Sessions Returns Owned Sessions.")]
     public async Task GetSessions_ReturnsOwnedSessions()
     {
         var context = TestHelper.CreateContext(nameof(GetSessions_ReturnsOwnedSessions));

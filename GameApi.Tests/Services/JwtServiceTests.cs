@@ -24,7 +24,7 @@ public class JwtServiceTests
             })
             .Build();
 
-    [Fact]
+    [Fact(DisplayName = "Generate Token Includes Expected Claims.")]
     public void GenerateToken_IncludesExpectedClaims()
     {
         var service = new JwtService(CreateConfiguration());
@@ -42,7 +42,7 @@ public class JwtServiceTests
         Assert.InRange(jwt.ValidTo, expectedExpiry.AddSeconds(-30), expectedExpiry.AddSeconds(30));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Generate Token Can Be Validated With Configuration Key.")]
     public void GenerateToken_CanBeValidatedWithConfigurationKey()
     {
         var service = new JwtService(CreateConfiguration());

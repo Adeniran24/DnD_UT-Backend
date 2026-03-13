@@ -12,7 +12,7 @@ namespace GameApi.Tests.Controllers;
 
 public class WikiControllersSmokeTests
 {
-    [Fact]
+    [Fact(DisplayName = "Ability Scores Get All Returns Ok When Data Loaded.")]
     public void AbilityScores_GetAll_ReturnsOk_WhenDataLoaded()
     {
         var controller = new AbilityScoresController();
@@ -20,7 +20,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Alignments Get All Returns Ok When Data Loaded.")]
     public void Alignments_GetAll_ReturnsOk_WhenDataLoaded()
     {
         var controller = new AlignmentsController();
@@ -28,7 +28,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Backgrounds Get All Returns Ok When Data Loaded.")]
     public void Backgrounds_GetAll_ReturnsOk_WhenDataLoaded()
     {
         var controller = new BackgroundsController();
@@ -36,7 +36,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Classes Get All Returns Content When File Available.")]
     public async Task Classes_GetAll_ReturnsContent_WhenFileAvailable()
     {
         var controller = new ClassesController();
@@ -45,7 +45,7 @@ public class WikiControllersSmokeTests
         Assert.Equal("application/json", content.ContentType);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Conditions Get All Returns Ok When Data Loaded.")]
     public async Task Conditions_GetAll_ReturnsOk_WhenDataLoaded()
     {
         var controller = new ConditionsController();
@@ -53,7 +53,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Damage Types Get All Returns Ok When Data Loaded.")]
     public void DamageTypes_GetAll_ReturnsOk_WhenDataLoaded()
     {
         var controller = new DamageTypesController();
@@ -61,7 +61,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Equipment Get All Returns Ok When Data Loaded.")]
     public void Equipment_GetAll_ReturnsOk_WhenDataLoaded()
     {
         var controller = new EquipmentController();
@@ -69,7 +69,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Languages Controller Throws When File Missing.")]
     public void Languages_Controller_Throws_WhenFileMissing()
     {
         var env = TestHelper.CreateWebHostEnvironment();
@@ -78,7 +78,7 @@ public class WikiControllersSmokeTests
             new LanguagesController(NullLogger<LanguagesController>.Instance, env));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Magic Items Get All Returns Ok When Empty.")]
     public void MagicItems_GetAll_ReturnsOk_WhenEmpty()
     {
         var controller = new MagicItemsController(NullLogger<MagicItemsController>.Instance);
@@ -86,7 +86,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result.Result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Magic Schools Get All Returns500 When File Missing.")]
     public void MagicSchools_GetAll_Returns500_WhenFileMissing()
     {
         var env = TestHelper.CreateWebHostEnvironment();
@@ -97,7 +97,7 @@ public class WikiControllersSmokeTests
         Assert.Equal(500, status.StatusCode);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Monsters Get All Returns Ok When Empty.")]
     public void Monsters_GetAll_ReturnsOk_WhenEmpty()
     {
         var env = TestHelper.CreateWebHostEnvironment();
@@ -107,7 +107,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Proficiencies Get All Returns Ok When Empty.")]
     public void Proficiencies_GetAll_ReturnsOk_WhenEmpty()
     {
         var controller = new ProficienciesController(NullLogger<ProficienciesController>.Instance);
@@ -115,7 +115,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result.Result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Races Get All Returns Ok When Empty.")]
     public void Races_GetAll_ReturnsOk_WhenEmpty()
     {
         var controller = new RacesController(NullLogger<RacesController>.Instance);
@@ -123,7 +123,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result.Result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Skills Get All Returns Ok When Loaded.")]
     public void Skills_GetAll_ReturnsOk_WhenLoaded()
     {
         var controller = new SkillsController(NullLogger<SkillsController>.Instance);
@@ -131,7 +131,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result.Result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Spells Get All Returns Ok When Empty.")]
     public void Spells_GetAll_ReturnsOk_WhenEmpty()
     {
         var env = TestHelper.CreateWebHostEnvironment();
@@ -141,7 +141,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result.Result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Subclasses Get All Returns Ok When Seeded.")]
     public void Subclasses_GetAll_ReturnsOk_WhenSeeded()
     {
         var controller = new SubclassesController();
@@ -149,7 +149,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result.Result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Subraces Get All Returns Ok When Seeded.")]
     public void Subraces_GetAll_ReturnsOk_WhenSeeded()
     {
         var controller = new SubracesController();
@@ -157,7 +157,7 @@ public class WikiControllersSmokeTests
         Assert.IsType<OkObjectResult>(result.Result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Weapon Properties Get Returns Not Found When File Missing.")]
     public async Task WeaponProperties_Get_ReturnsNotFound_WhenFileMissing()
     {
         var env = TestHelper.CreateWebHostEnvironment();

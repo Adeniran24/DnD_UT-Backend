@@ -18,7 +18,7 @@ public class PdfControllerTests
         return new FormFile(stream, 0, bytes.Length, "file", name);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Upload Pdf Persists Record.")]
     public async Task UploadPdf_PersistsRecord()
     {
         var context = TestHelper.CreateContext(nameof(UploadPdf_PersistsRecord));
@@ -36,7 +36,7 @@ public class PdfControllerTests
         Assert.Single(context.PdfFiles);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Get Template Pdf Returns Not Found When Missing.")]
     public void GetTemplatePdf_ReturnsNotFound_WhenMissing()
     {
         var context = TestHelper.CreateContext(nameof(GetTemplatePdf_ReturnsNotFound_WhenMissing));
