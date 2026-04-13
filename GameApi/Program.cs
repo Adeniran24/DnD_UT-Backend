@@ -152,8 +152,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var path = context.HttpContext.Request.Path;
 
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    (path.StartsWithSegments("/hubs/dm") ||
-                     path.StartsWithSegments("/hubs/vtt")))
+                    path.StartsWithSegments("/hubs/dm"))
                 {
                     context.Token = accessToken;
                 }
@@ -291,6 +290,5 @@ app.UseSwaggerUI(c =>
 // ======================================================
 app.MapControllers().RequireCors("CorsPolicy");
 app.MapHub<DirectMessageHub>("/hubs/dm").RequireCors("CorsPolicy");
-app.MapHub<VttHub>("/hubs/vtt").RequireCors("CorsPolicy");
 
 app.Run();

@@ -28,11 +28,6 @@ namespace GameApi.Models
     public ICollection<ChatRoomUser> ChatRooms { get; set; } = new List<ChatRoomUser>();
     public ICollection<Friendship> SentFriendRequests { get; set; } = new List<Friendship>();
     public ICollection<Friendship> ReceivedFriendRequests { get; set; } = new List<Friendship>();
-    public ICollection<CommunityUser> Communities { get; set; } = new List<CommunityUser>();
-    public ICollection<CommunityMessage> CommunityMessages { get; set; } = new List<CommunityMessage>();
-    public ICollection<CommunityMessageReaction> CommunityMessageReactions { get; set; } = new List<CommunityMessageReaction>();
-    public ICollection<CommunityInvite> CommunityInvitesCreated { get; set; } = new List<CommunityInvite>();
-    public ICollection<VoiceChannelState> VoiceChannelStates { get; set; } = new List<VoiceChannelState>();
 }
 
 }

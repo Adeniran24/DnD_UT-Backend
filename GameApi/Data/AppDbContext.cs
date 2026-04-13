@@ -28,15 +28,6 @@ namespace GameApi.Data
         public DbSet<Book> Books { get; set; }
         public DbSet<PdfFormData> PdfFormDatas { get; set; }
 
-        // Community system
-        public DbSet<Community> Communities { get; set; }
-        public DbSet<Channel> Channels { get; set; }
-        public DbSet<CommunityMessage> CommunityMessages { get; set; }
-        public DbSet<CommunityUser> CommunityUsers { get; set; }
-        public DbSet<CommunityInvite> CommunityInvites { get; set; }
-        public DbSet<CommunityMessageReaction> CommunityMessageReactions { get; set; }
-        public DbSet<VoiceChannelState> VoiceChannelStates { get; set; }
-
         // -------------------------------
         // DND2014 Entities
         // -------------------------------
@@ -49,13 +40,6 @@ namespace GameApi.Data
         public DbSet<DNDPrerequisite> DNDPrerequisites { get; set; }
         public DbSet<DirectMessage> DirectMessages { get; set; }
         public DbSet<Character> Characters { get; set; }
-        public DbSet<VttSession> VttSessions { get; set; }
-        public DbSet<VttSessionMember> VttSessionMembers { get; set; }
-        public DbSet<VttMap> VttMaps { get; set; }
-        public DbSet<VttToken> VttTokens { get; set; }
-        public DbSet<VttChatMessage> VttChatMessages { get; set; }
-        public DbSet<VttAsset> VttAssets { get; set; }
-        public DbSet<VttInitiativeEntry> VttInitiativeEntries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -94,92 +78,6 @@ namespace GameApi.Data
                 .WithMany(u => u.ReceivedFriendRequests)
                 .HasForeignKey(f => f.AddresseeId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // -------------------------------
-            // Community -> Channels -> Messages
-            // -------------------------------
-            modelBuilder.Entity<Community>()
-                .HasMany(c => c.Channels)
-                .WithOne(ch => ch.Community)
-                .HasForeignKey(ch => ch.CommunityId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Channel>()
-                .HasMany(ch => ch.Messages)
-                .WithOne(m => m.Channel)
-                .HasForeignKey(m => m.ChannelId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Channel>()
-                .HasMany(ch => ch.Children)
-                .WithOne(ch => ch.Parent)
-                .HasForeignKey(ch => ch.ParentId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<CommunityMessage>()
-                .HasOne(m => m.Sender)
-                .WithMany(u => u.CommunityMessages)
-                .HasForeignKey(m => m.SenderId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<CommunityMessage>()
-                .HasOne(m => m.Recipient)
-                .WithMany()
-                .HasForeignKey(m => m.RecipientId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // -------------------------------
-            // CommunityUser composite key
-            // -------------------------------
-            modelBuilder.Entity<CommunityUser>()
-                .HasKey(cu => new { cu.CommunityId, cu.UserId });
-
-            modelBuilder.Entity<CommunityInvite>()
-                .HasIndex(ci => ci.Code)
-                .IsUnique();
-
-            modelBuilder.Entity<CommunityInvite>()
-                .HasOne(ci => ci.Community)
-                .WithMany(c => c.Invites)
-                .HasForeignKey(ci => ci.CommunityId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<CommunityInvite>()
-                .HasOne(ci => ci.CreatedBy)
-                .WithMany(u => u.CommunityInvitesCreated)
-                .HasForeignKey(ci => ci.CreatedById)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<CommunityMessageReaction>()
-                .HasIndex(r => new { r.MessageId, r.UserId, r.Emoji })
-                .IsUnique();
-
-            modelBuilder.Entity<CommunityMessageReaction>()
-                .HasOne(r => r.Message)
-                .WithMany(m => m.Reactions)
-                .HasForeignKey(r => r.MessageId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<CommunityMessageReaction>()
-                .HasOne(r => r.User)
-                .WithMany(u => u.CommunityMessageReactions)
-                .HasForeignKey(r => r.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VoiceChannelState>()
-                .HasKey(vs => new { vs.ChannelId, vs.UserId });
-
-            modelBuilder.Entity<VoiceChannelState>()
-                .HasOne(vs => vs.Channel)
-                .WithMany(ch => ch.VoiceStates)
-                .HasForeignKey(vs => vs.ChannelId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VoiceChannelState>()
-                .HasOne(vs => vs.User)
-                .WithMany(u => u.VoiceChannelStates)
-                .HasForeignKey(vs => vs.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             // -------------------------------
             // MapForge share composite key
@@ -251,88 +149,6 @@ modelBuilder.Entity<Character>()
     .WithMany()
     .HasForeignKey(dm => dm.ReceiverId)
     .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<VttSession>()
-                .HasOne(v => v.Owner)
-                .WithMany()
-                .HasForeignKey(v => v.OwnerUserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<VttSessionMember>()
-                .HasKey(m => new { m.SessionId, m.UserId });
-
-            modelBuilder.Entity<VttSessionMember>()
-                .HasOne(m => m.Session)
-                .WithMany(s => s.Members)
-                .HasForeignKey(m => m.SessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VttSessionMember>()
-                .HasOne(m => m.User)
-                .WithMany()
-                .HasForeignKey(m => m.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VttMap>()
-                .HasOne(m => m.Session)
-                .WithMany(s => s.Maps)
-                .HasForeignKey(m => m.SessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VttToken>()
-                .HasOne(t => t.Session)
-                .WithMany(s => s.Tokens)
-                .HasForeignKey(t => t.SessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VttToken>()
-                .HasOne(t => t.Owner)
-                .WithMany()
-                .HasForeignKey(t => t.OwnerUserId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            modelBuilder.Entity<VttToken>()
-                .HasOne(t => t.Character)
-                .WithMany()
-                .HasForeignKey(t => t.CharacterId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            modelBuilder.Entity<VttChatMessage>()
-                .HasOne(m => m.Session)
-                .WithMany(s => s.ChatMessages)
-                .HasForeignKey(m => m.SessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VttChatMessage>()
-                .HasOne(m => m.User)
-                .WithMany()
-                .HasForeignKey(m => m.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<VttInitiativeEntry>()
-                .HasOne(i => i.Session)
-                .WithMany(s => s.InitiativeEntries)
-                .HasForeignKey(i => i.SessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VttInitiativeEntry>()
-                .HasOne(i => i.Token)
-                .WithMany()
-                .HasForeignKey(i => i.TokenId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            modelBuilder.Entity<VttAsset>()
-                .HasOne(a => a.Session)
-                .WithMany(s => s.Assets)
-                .HasForeignKey(a => a.SessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<VttAsset>()
-                .HasOne(a => a.UploadedBy)
-                .WithMany()
-                .HasForeignKey(a => a.UploadedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             
         }
