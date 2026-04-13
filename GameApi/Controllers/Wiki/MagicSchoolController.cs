@@ -13,7 +13,7 @@ public class MagicSchoolsController : ControllerBase
     {
         _logger = logger;
         _env = env;
-        _jsonPath = Path.Combine(_env.ContentRootPath, "Database", "2014", "magic-schools.json");
+        _jsonPath = Path.Combine(_env.ContentRootPath, "Database", "2014", "5e-SRD-Magic-Schools.json");
     }
 
     private List<MagicSchool> LoadMagicSchoolsFromJsonFile()

@@ -25,7 +25,6 @@ namespace GameApi.Data
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<ChatRoom> ChatRooms { get; set; }
         public DbSet<ChatRoomUser> ChatRoomUsers { get; set; }
-        public DbSet<Message> Messages { get; set; }
         public DbSet<Book> Books { get; set; }
         public DbSet<PdfFormData> PdfFormDatas { get; set; }
 
@@ -94,30 +93,6 @@ namespace GameApi.Data
                 .HasOne(f => f.Addressee)
                 .WithMany(u => u.ReceivedFriendRequests)
                 .HasForeignKey(f => f.AddresseeId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // -------------------------------
-            // ChatRoom -> Messages
-            // -------------------------------
-            modelBuilder.Entity<ChatRoom>()
-                .HasMany(cr => cr.Messages)
-                .WithOne(m => m.ChatRoom)
-                .HasForeignKey(m => m.ChatRoomId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // -------------------------------
-            // Message relationships
-            // -------------------------------
-            modelBuilder.Entity<Message>()
-                .HasOne(m => m.Sender)
-                .WithMany(u => u.Messages)
-                .HasForeignKey(m => m.SenderId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Message>()
-                .HasOne(m => m.Recipient)
-                .WithMany()
-                .HasForeignKey(m => m.RecipientId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // -------------------------------

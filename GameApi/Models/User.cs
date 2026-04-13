@@ -33,7 +33,6 @@ namespace GameApi.Models
     public ICollection<CommunityMessageReaction> CommunityMessageReactions { get; set; } = new List<CommunityMessageReaction>();
     public ICollection<CommunityInvite> CommunityInvitesCreated { get; set; } = new List<CommunityInvite>();
     public ICollection<VoiceChannelState> VoiceChannelStates { get; set; } = new List<VoiceChannelState>();
-    public ICollection<Message> Messages { get; set; } = new List<Message>();
 }
 
 }

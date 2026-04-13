@@ -266,8 +266,7 @@ public async Task<IActionResult> UnblockFriend([FromQuery] int userIdToUnblock)
     if (friendship == null)
         return NotFound("Kapcsolat nem található.");
 
-    // Ha blokk volt, visszaállítjuk Pending/None-ra
-    friendship.Status = FriendshipStatus.None; // vagy Accepted, ha korábban barátok voltak
+    _context.Friendships.Remove(friendship);
 
     await _context.SaveChangesAsync();
     return Ok(new { message = "Felhasználó unblock-olva." });
@@ -305,7 +304,7 @@ public async Task<IActionResult> UnblockFriend([FromQuery] int userIdToUnblock)
         }
 
         // 10. Online barátok lekérdezése (placeholder)
-        [HttpGet("online")]
+        [NonAction]
         public async Task<IActionResult> GetOnlineFriends()
         {
             // TODO: Integrálni SignalR-rel vagy más real-time rendszerrel
@@ -313,7 +312,7 @@ public async Task<IActionResult> UnblockFriend([FromQuery] int userIdToUnblock)
         }
 
         // 11. Értesítések (placeholder)
-        [HttpGet("notifications")]
+        [NonAction]
         public async Task<IActionResult> GetFriendNotifications()
         {
             // TODO: Push / toast értesítés

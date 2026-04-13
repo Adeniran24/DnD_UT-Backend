@@ -21,7 +21,7 @@ namespace GameApi.Controllers
         }
 
         // 1. Chatszoba létrehozása
-        [HttpPost("create-room")]
+        [NonAction]
         public async Task<IActionResult> CreateRoom([FromQuery] string roomName)
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -39,7 +39,7 @@ namespace GameApi.Controllers
         }
 
         // 2. Felhasználó meghívása a szobába
-        [HttpPost("invite")]
+        [NonAction]
         public async Task<IActionResult> InviteUser([FromQuery] int roomId, [FromQuery] string username)
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -65,7 +65,7 @@ namespace GameApi.Controllers
         }
 
         // 3. Csatlakozás meglévő szobához
-        [HttpPost("join")]
+        [NonAction]
         public async Task<IActionResult> JoinRoom([FromQuery] int roomId)
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -150,7 +150,7 @@ namespace GameApi.Controllers
         }
 
         // 6. Kilépés a szobából
-        [HttpPost("leave")]
+        [NonAction]
         public async Task<IActionResult> LeaveRoom([FromQuery] int roomId)
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

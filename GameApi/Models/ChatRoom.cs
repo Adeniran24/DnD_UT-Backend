@@ -10,7 +10,6 @@ namespace GameApi.Models
         public string Name { get; set; } = string.Empty;
 
         public ICollection<ChatRoomUser> Users { get; set; } = new List<ChatRoomUser>();
-        public ICollection<Message> Messages { get; set; } = new List<Message>();
     }
 
     public class ChatRoomUser

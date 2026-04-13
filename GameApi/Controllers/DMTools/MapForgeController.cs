@@ -435,7 +435,7 @@ namespace GameApi.Controllers
         }
 
         // PATCH /api/mapforge/campaigns/{id}/name
-        [HttpPatch("campaigns/{id}/name")]
+        [NonAction]
         public async Task<ActionResult<Campaign>> RenameCampaign(string id, [FromBody] RenameCampaignRequest req)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -473,7 +473,7 @@ namespace GameApi.Controllers
         }
 
         // DELETE /api/mapforge/campaigns/{id}
-        [HttpDelete("campaigns/{id}")]
+        [NonAction]
         public async Task<IActionResult> DeleteCampaign(string id)
         {
             var userId = GetCurrentUserId();
@@ -539,7 +539,7 @@ namespace GameApi.Controllers
         // Node endpoints (DB-ben is működik: JSON read-modify-write)
         // =========================================================
 
-        [HttpPost("campaigns/{id}/nodes")]
+        [NonAction]
         public async Task<ActionResult<FlowNode>> AddNode(string id, [FromBody] CreateNodeRequest req)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -590,7 +590,7 @@ namespace GameApi.Controllers
             return Ok(node);
         }
 
-        [HttpPut("campaigns/{id}/nodes/{nodeId}")]
+        [NonAction]
         public async Task<ActionResult<FlowNode>> UpdateNode(string id, string nodeId, [FromBody] UpdateNodeRequest req)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -644,7 +644,7 @@ namespace GameApi.Controllers
             return Ok(node);
         }
 
-        [HttpDelete("campaigns/{id}/nodes/{nodeId}")]
+        [NonAction]
         public async Task<IActionResult> DeleteNode(string id, string nodeId)
         {
             var userId = GetCurrentUserId();
@@ -761,7 +761,7 @@ namespace GameApi.Controllers
         // Edge endpoints
         // =========================================================
 
-        [HttpPost("campaigns/{id}/edges")]
+        [NonAction]
         public async Task<ActionResult<FlowEdge>> AddEdge(string id, [FromBody] CreateEdgeRequest req)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -805,7 +805,7 @@ namespace GameApi.Controllers
             return Ok(edge);
         }
 
-        [HttpDelete("campaigns/{id}/edges/{edgeId}")]
+        [NonAction]
         public async Task<IActionResult> DeleteEdge(string id, string edgeId)
         {
             var userId = GetCurrentUserId();
@@ -936,7 +936,7 @@ namespace GameApi.Controllers
         // Invite endpoints
         // =========================================================
 
-        [HttpPost("campaigns/{id}/invites/friend")]
+        [NonAction]
         public async Task<ActionResult<CampaignInviteDto>> CreateFriendInvite(string id, [FromBody] CampaignInviteRequest req)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -1013,7 +1013,7 @@ namespace GameApi.Controllers
             });
         }
 
-        [HttpPost("campaigns/{id}/invites/link")]
+        [NonAction]
         public async Task<ActionResult<CampaignInviteLinkDto>> CreateLinkInvite(string id, [FromBody] CampaignInviteLinkRequest req)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -1058,7 +1058,7 @@ namespace GameApi.Controllers
             });
         }
 
-        [HttpGet("invites")]
+        [NonAction]
         public async Task<ActionResult<List<CampaignInviteDto>>> GetMyInvites()
         {
             var userId = GetCurrentUserId();
@@ -1084,7 +1084,7 @@ namespace GameApi.Controllers
             return Ok(list);
         }
 
-        [HttpPost("invites/{inviteId}/accept")]
+        [NonAction]
         public async Task<ActionResult<CampaignShareDto>> AcceptInvite(int inviteId)
         {
             var userId = GetCurrentUserId();
@@ -1140,7 +1140,7 @@ namespace GameApi.Controllers
             });
         }
 
-        [HttpPost("invites/{inviteId}/decline")]
+        [NonAction]
         public async Task<IActionResult> DeclineInvite(int inviteId)
         {
             var userId = GetCurrentUserId();
@@ -1163,7 +1163,7 @@ namespace GameApi.Controllers
             return NoContent();
         }
 
-        [HttpPost("invites/claim")]
+        [NonAction]
         public async Task<ActionResult<CampaignShareDto>> ClaimInvite([FromBody] CampaignInviteClaimRequest req)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);

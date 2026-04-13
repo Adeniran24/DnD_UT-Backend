@@ -27,13 +27,13 @@ namespace GameApi.Controllers
             _env = env;
         }
 
-        [HttpGet]
+        [NonAction]
         public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
         {
             return await _context.Books.ToListAsync();
         }
 
-        [HttpGet("{id:int}")]
+        [NonAction]
         public async Task<ActionResult<Book>> GetBook(int id)
         {
             var book = await _context.Books.FindAsync(id);
@@ -110,8 +110,8 @@ namespace GameApi.Controllers
             return Content(content, "text/markdown");
         }
 
-        [HttpPost]
         [Consumes("multipart/form-data")]
+        [NonAction]
         public async Task<ActionResult<Book>> PostBook([FromForm] BookUploadDto dto)
         {
             if (dto.CoverImage == null || dto.File == null)
@@ -150,7 +150,7 @@ namespace GameApi.Controllers
             return CreatedAtAction(nameof(GetBook), new { id = book.Id }, book);
         }
 
-        [HttpDelete("{id:int}")]
+        [NonAction]
         public async Task<IActionResult> DeleteBook(int id)
         {
             var book = await _context.Books.FindAsync(id);

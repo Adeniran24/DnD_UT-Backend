@@ -337,10 +337,10 @@ public class FriendControllerTests
         Assert.Equal("Kapcsolat nem található.", notFound.Value);
     }
 
-    [Fact(DisplayName = "Unblock Friend sets status to none.")]
-    public async Task UnblockFriend_SetsStatusToNone()
+    [Fact(DisplayName = "Unblock Friend removes existing relationship.")]
+    public async Task UnblockFriend_RemovesExistingRelationship()
     {
-        var context = TestHelper.CreateContext(nameof(UnblockFriend_SetsStatusToNone));
+        var context = TestHelper.CreateContext(nameof(UnblockFriend_RemovesExistingRelationship));
         var user1 = new User { Id = 1, Username = "u1", Email = "u1@dnd.com", PasswordHash = "x", CreatedAt = DateTime.UtcNow };
         var user2 = new User { Id = 2, Username = "u2", Email = "u2@dnd.com", PasswordHash = "x", CreatedAt = DateTime.UtcNow };
         var relation = new Friendship
@@ -362,8 +362,7 @@ public class FriendControllerTests
         Assert.IsType<OkObjectResult>(result);
         var updated = await context.Friendships
             .FirstOrDefaultAsync(f => f.Id == relation.Id);
-        Assert.NotNull(updated);
-        Assert.Equal(FriendshipStatus.None, updated!.Status);
+        Assert.Null(updated);
     }
 
     [Fact(DisplayName = "Get Mutual Friends returns intersection.")]
