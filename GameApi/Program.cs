@@ -263,6 +263,8 @@ else
 {
     Console.WriteLine("WARNING: Book image directory not found for markdown images.");
 }
+
+// 5etools content is copied into wwwroot/5etools and wwwroot/5etools-img during build/package steps
 app.UseRouting();
 app.UseCors("CorsPolicy");
 app.UseAuthentication();

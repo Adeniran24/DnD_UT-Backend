@@ -40,4 +40,10 @@
     <PackageReference Include="Scalar.AspNetCore" Version="2.8.5" />
   </ItemGroup>
 
+  <!-- Exclude large third-party static folders from default content scanning to avoid MSBuild issues -->
+  <ItemGroup>
+    <Content Remove="wwwroot\5etools\**" />
+    <Content Remove="wwwroot\5etools-img\**" />
+  </ItemGroup>
+
 </Project>
