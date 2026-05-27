@@ -21,3 +21,7 @@
 # NuGet packages
 *.nupkg
 **/packages/*
+
+# Ignore runtime 5etools static assets (copied to server via script)
+/wwwroot/5etools/
+/wwwroot/5etools-img/
